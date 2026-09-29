@@ -6,7 +6,7 @@ A static site on GitHub Pages. The audio lives in a public Nextcloud folder. An 
 
 ## Publishing a set
 
-Drop an MP3 into the cloud folder. It shows up on the site within an hour (or immediately via **Actions → Update sets → Run workflow**). The date comes from the file itself.
+Drop an MP3 into the cloud folder. It shows up on the site within 15 minutes (or immediately via **Actions → Update sets → Run workflow**). The date comes from the file itself.
 
 File names:
 

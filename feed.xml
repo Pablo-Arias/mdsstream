@@ -17,12 +17,12 @@
     <itunes:category text="Music"/>
     <itunes:explicit>false</itunes:explicit>
     <item>
-      <title>High energy modular</title>
+      <title>High energy modular testing the new 909 config</title>
       <itunes:author>MDS</itunes:author>
       <description>Modular techno · Let&apos;s go · 135 BPM</description>
       <guid isPermaLink="false">1198333360</guid>
       <pubDate>Mon, 28 Sep 2026 20:50:35 GMT</pubDate>
-      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Modular%20techno%20_%20Let%27s%20go%20_%20135%20_%20High%20energy%20modular.mp3" length="154868505" type="audio/mpeg"/>
+      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Modular%20techno%20_%20Let%27s%20go%20_%20135%20_%20High%20energy%20modular%20testing%20the%20new%20909%20config.mp3" length="154868505" type="audio/mpeg"/>
       <link>https://pablo-arias.github.io/mdsstream/#1198333360</link>
       <itunes:duration>3872</itunes:duration>
     </item>
