@@ -3,7 +3,7 @@
   <channel>
     <title>MDS · Vercors Stream</title>
     <link>https://pablo-arias.github.io/mdsstream/</link>
-    <description>MDS streaming analog and improvised music sporadically from the Vercors natural park, in HQ and for free.</description>
+    <description>MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ and for free.</description>
     <language>en</language>
     <itunes:author>MDS</itunes:author>
     <itunes:image href="https://pablo-arias.github.io/mdsstream/icon.svg"/>
@@ -26,11 +26,11 @@
       <link>https://pablo-arias.github.io/mdsstream/#1197317290</link>
     </item>
     <item>
-      <title>Short atmospheric and polyrhithmic snippet</title>
+      <title>Short atmospheric and polyrhythmic snippet</title>
       <description>Ambient techno · Focus · 120 BPM</description>
       <guid isPermaLink="false">1198364518</guid>
       <pubDate>Sat, 26 Sep 2026 23:38:44 GMT</pubDate>
-      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Ambient%20techno%20_%20Focus%20_%20120%20_%20Short%20atmospheric%20and%20polyrhithmic%20snippet.mp3" length="3579820" type="audio/mpeg"/>
+      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Ambient%20techno%20_%20Focus%20_%20120%20_%20Short%20atmospheric%20and%20polyrhythmic%20snippet.mp3" length="3579820" type="audio/mpeg"/>
       <link>https://pablo-arias.github.io/mdsstream/#1198364518</link>
     </item>
   </channel>
