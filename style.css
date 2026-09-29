@@ -211,7 +211,8 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .what-rss { margin-bottom: 16px; font-size: 14px; }
 .what-rss summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .what-rss p { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
-.set-author { color: var(--text); }
+.set-author { margin: 2px 0 0; font-size: 14px; font-weight: 500; color: var(--text); }
+.set-author-label { color: var(--muted); font-weight: 400; }
 .bottom-links { margin: 28px 0 8px; display: flex; justify-content: center; }
 .linkish.small { font-size: 13px; gap: 6px; color: var(--muted); }
 .linkish.small svg { width: 15px; height: 15px; }
