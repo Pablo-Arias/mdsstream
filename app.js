@@ -496,17 +496,26 @@ notifyBtn.addEventListener("click", async () => {
       } else {
         const reg = await swReady;
         const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUBLIC_KEY) });
-        await api("/subscribe", { endpoint: sub.endpoint });
-        toast("You'll be notified of new sets");
+        try {
+          await api("/subscribe", { endpoint: sub.endpoint });
+          toast("You'll be notified of new sets");
+        } catch (err) {
+          await sub.unsubscribe(); // don't show "on" if the server doesn't know about this phone
+          throw err;
+        }
       }
     }
   } catch (err) {
     console.error(err);
-    toast("Couldn't change notifications. Try again later.");
+    toast(`Couldn't turn on notifications (${err?.message || err}). Try again later.`);
   }
   showNotifyState();
 });
 showNotifyState();
+// Self-repair: if this phone is subscribed, make sure the server knows (safe to repeat).
+currentSubscription()
+  .then((sub) => sub && api("/subscribe", { endpoint: sub.endpoint }))
+  .catch((err) => console.error("Re-subscribe failed", err));
 
 // "Listen in your podcast app": one-tap links for common apps, or copy the feed URL.
 const feedUrl = new URL("feed.xml", location.href).href;

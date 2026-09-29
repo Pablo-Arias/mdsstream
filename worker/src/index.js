@@ -81,7 +81,11 @@ export default {
         const endpoint = String(body.endpoint || "");
         let host;
         try { host = new URL(endpoint).hostname; } catch { return json({ error: "Bad subscription" }, 400); }
-        if (!endpoint.startsWith("https://") || !PUSH_HOSTS.test(host)) return json({ error: "Bad subscription" }, 400);
+        if (!endpoint.startsWith("https://") || !PUSH_HOSTS.test(host)) {
+          console.log(`Rejected push endpoint host: ${host}`);
+          return json({ error: "Bad subscription" }, 400);
+        }
+        console.log(`${pathname} from ${host}`);
         if (pathname === "/subscribe") {
           await env.DB.prepare("INSERT OR IGNORE INTO subscriptions (endpoint, created) VALUES (?, ?)")
             .bind(endpoint, new Date().toISOString())
