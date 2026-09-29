@@ -56,7 +56,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 h1 { margin: 10px 0 8px; font-size: clamp(56px, 14vw, 104px); line-height: .9; letter-spacing: -.04em; }
 .tagline { margin: 0; max-width: 34ch; font-size: 18px; color: var(--muted); }
-.pitch { margin: 10px 0 0; font-weight: 500; font-size: 18px; }
 .links { margin: 20px 0 0; font: 13px var(--mono); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .install {
   display: inline-flex; align-items: center; gap: 8px;

@@ -1,6 +1,6 @@
 # Vercors Stream
 
-MDS streaming sporadically from the Vercors natural park on this website.
+MDS streaming analog and improvised music sporadically from the Vercors natural park, in HQ and for free.
 
 A static site on GitHub Pages. The audio lives in a public Nextcloud folder. An hourly GitHub Action lists that folder and writes `sets.json` (for the site) and `feed.xml` (a podcast feed).
 
