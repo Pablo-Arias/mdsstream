@@ -162,9 +162,11 @@ function updateMomentUI() {
 function drawHeat() {
   const d = current?.duration || audio.duration;
   const marks = stats?.sets[current?.id]?.moments || [];
-  if (!d || !marks.length) return $("heat").replaceChildren();
+  const heat = $("heat");
+  if (!heat) return;
+  if (!d || !marks.length) return heat.replaceChildren();
   const max = Math.max(...marks.map(([, n]) => n));
-  $("heat").replaceChildren(...marks.map(([t, n]) => el("span", {
+  heat.replaceChildren(...marks.map(([t, n]) => el("span", {
     style: `left:${(t / d) * 100}%;width:${Math.max((BUCKET / d) * 100, 1)}%;opacity:${0.35 + (0.65 * n) / max}`,
   })));
 }
@@ -323,7 +325,7 @@ document.querySelector(".filters").addEventListener("click", (e) => {
   render();
 });
 
-$("moment").addEventListener("click", toggleMoment);
+$("moment")?.addEventListener("click", toggleMoment);
 $("toggle").addEventListener("click", () => (audio.paused ? audio.play() : audio.pause()));
 $("back").addEventListener("click", () => setPosition(Math.max(0, position() - 15)));
 $("fwd").addEventListener("click", () => setPosition(position() + 30));

@@ -49,6 +49,11 @@ Covers also show on the phone's lock screen and in podcast apps (square, 1400×1
 
 GitHub pauses scheduled workflows after 60 days without commits to the repo. If that happens, re-enable it in the Actions tab.
 
+## Changing the site's code
+
+After editing `app.js` or `style.css`, run `scripts/stamp-assets.sh` before committing. It
+updates the `?v=` in `index.html`, so visitors never get a new page with an old cached script.
+
 ## Local
 
 ```sh
