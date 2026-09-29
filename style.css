@@ -242,3 +242,24 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .notify[hidden] { display: none; }
 .notify.on { border-color: var(--accent); color: var(--accent); }
 .notify svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* "Good part" marks */
+.track { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
+.track input { flex: 1; min-width: 0; }
+.heat { position: absolute; left: 8px; right: 8px; top: -3px; height: 4px; pointer-events: none; }
+.heat span { position: absolute; top: 0; height: 100%; border-radius: 2px; background: var(--accent); }
+.ctl.moment { width: 40px; height: 40px; min-width: 40px; display: grid; place-items: center; padding: 0; }
+.ctl.moment[hidden] { display: none; }
+.ctl.moment svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.ctl.moment.on { color: var(--lets-go); }
+.ctl.moment.on svg { fill: currentColor; }
+.ctl.moment:active svg { transform: scale(1.2); }
+.best { margin: 6px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 12.5px var(--mono); color: var(--muted); }
+.best-label { color: var(--lets-go); }
+.moment-chip {
+  border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; background: transparent;
+  color: var(--text); font: 12.5px var(--mono);
+}
+.moment-chip:hover { border-color: var(--accent); }
+.curated b { font-weight: 500; color: var(--text); }
+.curated .heart { color: var(--lets-go); }

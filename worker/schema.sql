@@ -26,3 +26,12 @@ CREATE TABLE IF NOT EXISTS notified (
   set_id TEXT PRIMARY KEY,
   at     TEXT NOT NULL
 );
+
+-- "Good part" marks, in 30-second windows: one per device per window.
+CREATE TABLE IF NOT EXISTS moments (
+  set_id  TEXT NOT NULL,
+  device  TEXT NOT NULL,
+  bucket  INTEGER NOT NULL,
+  created TEXT NOT NULL,
+  PRIMARY KEY (set_id, device, bucket)
+);

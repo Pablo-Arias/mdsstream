@@ -39,7 +39,7 @@ async function api(path, body) {
   if (!res.ok) throw new Error(`${path}: ${res.status}`);
   return res.json();
 }
-const refreshStats = (data) => { stats = data; render(); };
+const refreshStats = (data) => { stats = data; render(); updateMomentUI(); };
 
 let sets = [];
 let current = null;
@@ -118,6 +118,7 @@ function render() {
 function socialRow(s) {
   const st = stats.sets[s.id] || { listens: 0, rating: null, ratings: 0 };
   const mine = stats.mine[s.id] || 0;
+  const best = [...(st.moments || [])].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 3);
   const summary = [
     st.ratings ? `${st.rating.toFixed(1)} (${st.ratings})` : "Not rated yet",
     `${st.listens} ${st.listens === 1 ? "listen" : "listens"}`,
@@ -130,7 +131,67 @@ function socialRow(s) {
       }, "★")),
     ),
     el("span", { class: "social-summary" }, summary),
+    best.length > 0 && el("p", { class: "best" },
+      el("span", { class: "best-label" }, "♥ Best moments:"),
+      ...best.map(([t, n]) => el("button", {
+        type: "button", class: "moment-chip", "data-id": s.id, "data-t": t,
+        "aria-label": `Play from ${fmtTime(t)}, marked by ${n}`,
+      }, `${fmtTime(t)} (${n})`)),
+    ),
   );
+}
+
+// "Good part" marks: 30-second windows, one per device per window (tap again to remove).
+const BUCKET = 30;
+const bucketOf = (t) => Math.floor(t / BUCKET) * BUCKET;
+const myMarks = (id) => stats?.myMoments?.[id] || [];
+let shownBucket = null;
+
+function updateMomentUI() {
+  const btn = $("moment");
+  if (!current || !btn) return;
+  shownBucket = bucketOf(position());
+  const on = myMarks(current.id).includes(shownBucket);
+  btn.classList.toggle("on", on);
+  btn.setAttribute("aria-pressed", String(on));
+  btn.hidden = !stats;
+  drawHeat();
+}
+
+// Where listeners marked good parts, drawn over the seek bar (brighter = more marks).
+function drawHeat() {
+  const d = current?.duration || audio.duration;
+  const marks = stats?.sets[current?.id]?.moments || [];
+  if (!d || !marks.length) return $("heat").replaceChildren();
+  const max = Math.max(...marks.map(([, n]) => n));
+  $("heat").replaceChildren(...marks.map(([t, n]) => el("span", {
+    style: `left:${(t / d) * 100}%;width:${Math.max((BUCKET / d) * 100, 1)}%;opacity:${0.35 + (0.65 * n) / max}`,
+  })));
+}
+
+async function toggleMoment() {
+  if (!current || !device || !stats) return;
+  const t = position();
+  const b = bucketOf(t);
+  const marks = ((stats.myMoments ??= {})[current.id] ??= []);
+  const on = !marks.includes(b);
+  on ? marks.push(b) : marks.splice(marks.indexOf(b), 1); // show it right away
+  updateMomentUI();
+  try {
+    refreshStats(await api("/moment", { setId: current.id, device, t, on }));
+    toast(on ? `♥ Marked ${fmtTime(b)} as a good part` : "Mark removed");
+  } catch {
+    toast("Couldn't save. Try again later.");
+  }
+}
+
+// Start a set at a given second (used by "Best moments").
+function playAt(set, t) {
+  if (!current || current.id !== set.id) load(set);
+  setPosition(t);
+  audio.play().catch(() => {});
+  render();
+  updateMomentUI();
 }
 
 async function rate(setId, n) {
@@ -168,6 +229,7 @@ function showPosition(t, d) {
   if (d) { seek.max = Math.floor(d); $("dur").textContent = fmtTime(d); }
   seek.value = Math.floor(t);
   $("cur").textContent = fmtTime(t);
+  if (current) updateMomentUI();
 }
 
 // Put a set in the player without playing it. Starts where this device left off,
@@ -186,6 +248,7 @@ function load(set) {
   $("now-title").textContent = set.title;
   history.replaceState(null, "", `#${set.id}`);
   try { localStorage.setItem(LAST_KEY, set.id); } catch {}
+  updateMomentUI();
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: set.title,
@@ -239,6 +302,8 @@ async function share(set) {
 list.addEventListener("click", (e) => {
   const playBtn = e.target.closest(".set-play");
   if (playBtn) play(sets.find((s) => s.id === playBtn.dataset.id));
+  const chip = e.target.closest(".moment-chip");
+  if (chip) playAt(sets.find((s) => s.id === chip.dataset.id), Number(chip.dataset.t));
   const star = e.target.closest(".star");
   if (star) rate(star.dataset.id, Number(star.dataset.stars));
   const shareBtn = e.target.closest(".set-share");
@@ -258,6 +323,7 @@ document.querySelector(".filters").addEventListener("click", (e) => {
   render();
 });
 
+$("moment").addEventListener("click", toggleMoment);
 $("toggle").addEventListener("click", () => (audio.paused ? audio.play() : audio.pause()));
 $("back").addEventListener("click", () => setPosition(Math.max(0, position() - 15)));
 $("fwd").addEventListener("click", () => setPosition(position() + 30));
@@ -296,6 +362,7 @@ let lastSave = 0;
 audio.addEventListener("seeking", () => (lastTick = null));
 audio.addEventListener("timeupdate", () => {
   trackListen();
+  if (bucketOf(audio.currentTime) !== shownBucket) updateMomentUI();
   if (Date.now() - lastSave > 5000) { lastSave = Date.now(); recordPosition(); }
   if (seeking) return;
   seek.value = Math.floor(audio.currentTime);

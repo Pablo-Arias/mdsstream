@@ -3,6 +3,7 @@
 //   GET  /stats?device=…   listens and ratings for every set (+ this device's own ratings)
 //   POST /listen           { setId, device }          count a listen (once per device per day)
 //   POST /rate             { setId, device, stars }   rate 1–5 (one rating per device)
+//   POST /moment           { setId, device, t, on }   mark/unmark a good part at t seconds (30 s windows)
 //   POST /subscribe        { endpoint }               notify this phone of new sets
 //   POST /unsubscribe      { endpoint }
 //
@@ -13,6 +14,8 @@
 import { sendPush } from "./push.js";
 
 const DEVICE = /^[0-9a-f-]{36}$/;
+const BUCKET = 30; // seconds per "good part" window
+const MAX_MOMENTS = 200; // per device per set
 const PUSH_HOSTS = /(^|\.)(fcm\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)$/;
 
 export default {
@@ -33,9 +36,30 @@ export default {
       if (request.method !== "POST") return json({ error: "Not found" }, 404);
       const body = await request.json().catch(() => ({}));
 
-      if (pathname === "/listen" || pathname === "/rate") {
+      if (pathname === "/listen" || pathname === "/rate" || pathname === "/moment") {
         if (!DEVICE.test(body.device || "")) return json({ error: "Bad device" }, 400);
-        if (!(await setIds(env)).has(body.setId)) return json({ error: "Unknown set" }, 400);
+        const known = await knownSets(env);
+        if (!known.has(body.setId)) return json({ error: "Unknown set" }, 400);
+        if (pathname === "/moment") {
+          const t = Number(body.t);
+          const duration = known.get(body.setId) || 6 * 3600;
+          if (!Number.isFinite(t) || t < 0 || t > duration + 5) return json({ error: "Bad time" }, 400);
+          const bucket = Math.floor(t / BUCKET);
+          if (body.on === false) {
+            await env.DB.prepare("DELETE FROM moments WHERE set_id = ? AND device = ? AND bucket = ?")
+              .bind(body.setId, body.device, bucket)
+              .run();
+          } else {
+            const { n } = await env.DB.prepare("SELECT COUNT(*) AS n FROM moments WHERE set_id = ? AND device = ?")
+              .bind(body.setId, body.device)
+              .first();
+            if (n >= MAX_MOMENTS) return json({ error: "Too many marks" }, 429);
+            await env.DB.prepare("INSERT OR IGNORE INTO moments (set_id, device, bucket, created) VALUES (?, ?, ?, ?)")
+              .bind(body.setId, body.device, bucket, new Date().toISOString())
+              .run();
+          }
+          return json(await stats(env, body.device));
+        }
         if (pathname === "/listen") {
           await env.DB.prepare("INSERT OR IGNORE INTO listens (set_id, device, day) VALUES (?, ?, ?)")
             .bind(body.setId, body.device, new Date().toISOString().slice(0, 10))
@@ -98,26 +122,33 @@ async function fetchSets(env) {
   return (await res.json()).sets || [];
 }
 
-// Only accept listens/ratings for sets that exist. Cached per Worker instance for 5 min.
-let setIdCache = { at: 0, ids: new Set() };
-async function setIds(env) {
-  if (Date.now() - setIdCache.at > 5 * 60 * 1000) {
-    setIdCache = { at: Date.now(), ids: new Set((await fetchSets(env)).map((s) => s.id)) };
+// Only accept listens/ratings/marks for sets that exist: Map of id → duration (s).
+// Cached per Worker instance for 5 min.
+let setCache = { at: 0, sets: new Map() };
+async function knownSets(env) {
+  if (Date.now() - setCache.at > 5 * 60 * 1000) {
+    setCache = { at: Date.now(), sets: new Map((await fetchSets(env)).map((s) => [s.id, s.duration || 0])) };
   }
-  return setIdCache.ids;
+  return setCache.sets;
 }
 
 async function stats(env, device) {
-  const [listens, ratings, mine] = await env.DB.batch([
+  const [listens, ratings, mine, moments, myMoments] = await env.DB.batch([
     env.DB.prepare("SELECT set_id, COUNT(*) AS n FROM listens GROUP BY set_id"),
     env.DB.prepare("SELECT set_id, AVG(stars) AS avg, COUNT(*) AS n FROM ratings GROUP BY set_id"),
     env.DB.prepare("SELECT set_id, stars FROM ratings WHERE device = ?").bind(device || ""),
+    env.DB.prepare("SELECT set_id, bucket, COUNT(*) AS n FROM moments GROUP BY set_id, bucket"),
+    env.DB.prepare("SELECT set_id, bucket FROM moments WHERE device = ?").bind(device || ""),
   ]);
   const sets = {};
-  const entry = (id) => (sets[id] ??= { listens: 0, rating: null, ratings: 0 });
+  const entry = (id) => (sets[id] ??= { listens: 0, rating: null, ratings: 0, moments: [] });
   for (const r of listens.results) entry(r.set_id).listens = r.n;
   for (const r of ratings.results) Object.assign(entry(r.set_id), { rating: Math.round(r.avg * 10) / 10, ratings: r.n });
-  return { sets, mine: Object.fromEntries(mine.results.map((r) => [r.set_id, r.stars])) };
+  // moments: [[startSecond, count], …] per set
+  for (const r of moments.results) entry(r.set_id).moments.push([r.bucket * BUCKET, r.n]);
+  const myMarks = {};
+  for (const r of myMoments.results) (myMarks[r.set_id] ??= []).push(r.bucket * BUCKET);
+  return { sets, mine: Object.fromEntries(mine.results.map((r) => [r.set_id, r.stars])), myMoments: myMarks, bucket: BUCKET };
 }
 
 async function notifyNewSets(env) {
