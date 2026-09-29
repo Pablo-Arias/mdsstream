@@ -142,7 +142,7 @@ function buildFeed(sets) {
     <title>MDS · Vercors Stream</title>
     <link>${SITE_URL}/</link>
     <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml"/>
-    <description>MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ, for free.</description>
+    <description>MDS streaming analog and electronic music for close friends, sporadically from the Vercors natural park, in HQ, for free.</description>
     <language>en</language>
     <itunes:author>MDS</itunes:author>
     <itunes:image href="${SITE_URL}/podcast-cover.jpg"/>
