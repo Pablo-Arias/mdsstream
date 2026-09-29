@@ -203,6 +203,27 @@ audio.addEventListener("loadedmetadata", () => {
   seek.max = Math.floor(audio.duration) || 0;
   $("dur").textContent = fmtTime(audio.duration);
 });
+// Recover from dropped connections. Long sets are streamed over one connection for up
+// to an hour, and servers sometimes cut it; reload the stream where it stopped.
+let wantPlaying = false;
+let recovering = false;
+let stallTimer;
+function recover() {
+  if (!current || recovering) return;
+  recovering = true;
+  startAt = audio.currentTime || startAt;
+  audio.src = current.url;
+  audio.play().catch(() => {}).finally(() => (recovering = false));
+}
+audio.addEventListener("play", () => (wantPlaying = true));
+audio.addEventListener("pause", () => { if (!recovering) wantPlaying = false; });
+audio.addEventListener("error", () => { if (wantPlaying && !audio.paused) setTimeout(recover, 1000); });
+audio.addEventListener("waiting", () => {
+  clearTimeout(stallTimer);
+  stallTimer = setTimeout(() => { if (wantPlaying && audio.readyState < 3) recover(); }, 8000);
+});
+audio.addEventListener("playing", () => clearTimeout(stallTimer));
+
 let lastSave = 0;
 audio.addEventListener("timeupdate", () => {
   if (Date.now() - lastSave > 5000) { lastSave = Date.now(); recordPosition(); }
@@ -212,6 +233,7 @@ audio.addEventListener("timeupdate", () => {
 });
 audio.addEventListener("pause", () => recordPosition());
 audio.addEventListener("ended", () => {
+  wantPlaying = false;
   recordPosition(true);
   const next = neighbour(1); // autoplay the next set down the list
   if (next) play(next);

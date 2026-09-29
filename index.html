@@ -34,10 +34,6 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
           Add to Home Screen
         </button>
-        <button type="button" class="linkish" id="podcast">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0M12 13v8"/><circle cx="12" cy="12" r="1"/></svg>
-          Listen in your podcast app
-        </button>
       </p>
     </div>
   </header>
@@ -93,6 +89,12 @@
     </dl>
     <ol id="sets" class="sets" aria-live="polite"></ol>
     <p id="status" class="status">Loading sets…</p>
+    <div class="bottom-links">
+      <button type="button" class="linkish small" id="podcast">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0M12 13v8"/><circle cx="12" cy="12" r="1"/></svg>
+        Listen in your podcast app
+      </button>
+    </div>
   </main>
 
   <p class="toast" id="toast" role="status" hidden></p>
