@@ -48,6 +48,88 @@ const openNotes = new Set(); // survives re-renders
 
 const ICON_SHARE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
 const inFilter = (s) => filter === "all" || (s.objectives || []).some((o) => o.id === filter);
+// Offline: sets saved into this browser (Cache Storage), played from a local blob URL.
+// Nextcloud doesn't allow other sites to read its files, so saving goes through the Worker.
+const OFFLINE_CACHE = "mds-offline-v1";
+const OFFLINE_KEY = "mdfs.offline";
+const offlineUrls = new Map(); // setId → blob: URL, ready to play
+const saving = new Map(); // setId → percent
+let offlineIds = new Set();
+try { offlineIds = new Set(JSON.parse(localStorage.getItem(OFFLINE_KEY)) || []); } catch {}
+const saveOfflineIndex = () => { try { localStorage.setItem(OFFLINE_KEY, JSON.stringify([...offlineIds])); } catch {} };
+const offlineRequest = (id) => new Request(new URL(`offline/${encodeURIComponent(id)}.mp3`, location.href));
+const sourceFor = (set) => offlineUrls.get(set.id) || set.url;
+
+// Turn saved sets into playable blob URLs (drops any that the browser has evicted).
+async function prepareOffline() {
+  if (!("caches" in window) || !offlineIds.size) return;
+  const cache = await caches.open(OFFLINE_CACHE);
+  for (const id of [...offlineIds]) {
+    const res = await cache.match(offlineRequest(id));
+    if (res) offlineUrls.set(id, URL.createObjectURL(await res.blob()));
+    else offlineIds.delete(id);
+  }
+  saveOfflineIndex();
+}
+
+async function saveOffline(set) {
+  if (!("caches" in window) || !window.ReadableStream || !window.TransformStream) {
+    return toast("This browser can't save sets offline. Try the MP3 file instead.");
+  }
+  navigator.storage?.persist?.().catch(() => {}); // ask the browser not to clear it
+  saving.set(set.id, 0);
+  render();
+  try {
+    const res = await fetch(`${API}/audio/${encodeURIComponent(set.id)}`);
+    if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+    const total = Number(res.headers.get("content-length")) || set.size || 0;
+    let got = 0, lastDraw = 0;
+    const progress = new TransformStream({
+      transform(chunk, ctl) {
+        got += chunk.length;
+        if (total && Date.now() - lastDraw > 250) {
+          lastDraw = Date.now();
+          saving.set(set.id, Math.min(99, Math.floor((got / total) * 100)));
+          render();
+        }
+        ctl.enqueue(chunk);
+      },
+    });
+    const cache = await caches.open(OFFLINE_CACHE);
+    await cache.put(offlineRequest(set.id), new Response(res.body.pipeThrough(progress), { headers: { "Content-Type": "audio/mpeg" } }));
+    if (total && got < total) throw new Error("incomplete download");
+    const saved = await cache.match(offlineRequest(set.id));
+    offlineUrls.set(set.id, URL.createObjectURL(await saved.blob()));
+    offlineIds.add(set.id);
+    saveOfflineIndex();
+    toast("Saved: plays without internet");
+  } catch (err) {
+    console.error(err);
+    caches.open(OFFLINE_CACHE).then((c) => c.delete(offlineRequest(set.id))).catch(() => {});
+    toast(err?.name === "QuotaExceededError" ? "Not enough space on this device." : "Couldn't save. Try again on a good connection.");
+  }
+  saving.delete(set.id);
+  render();
+}
+
+async function removeOffline(set) {
+  if (!confirm(`Remove "${set.title}" from this device? You can still stream it.`)) return;
+  const url = offlineUrls.get(set.id);
+  offlineIds.delete(set.id);
+  offlineUrls.delete(set.id);
+  saveOfflineIndex();
+  if (current?.id === set.id && url) { // keep playing, from the internet
+    const t = audio.currentTime, playing = !audio.paused;
+    audio.src = set.url;
+    startAt = t;
+    if (playing) audio.play().catch(() => {});
+  }
+  if (url) URL.revokeObjectURL(url);
+  await caches.open(OFFLINE_CACHE).then((c) => c.delete(offlineRequest(set.id))).catch(() => {});
+  render();
+  toast("Removed from this device");
+}
+
 const setLink = (set) => `${location.origin}${location.pathname}#${set.id}`;
 
 const fmtTime = (s) => {
@@ -78,7 +160,8 @@ function render() {
       const p = progress[s.id];
       const state = !p ? "new" : p.done ? "played" : "started";
       const stateLabel = { new: "New", played: "Played ✓", started: `Resume at ${fmtTime(p?.t)}` }[state];
-      return el("li", { class: `set is-${state}${isCurrent ? " is-current" : ""}`, id: `set-${s.id}` },
+      const unavailable = !navigator.onLine && !offlineUrls.has(s.id);
+      return el("li", { class: `set is-${state}${isCurrent ? " is-current" : ""}${unavailable ? " is-unavailable" : ""}`, id: `set-${s.id}` },
         el("button", {
           class: `set-play${s.cover ? " has-cover" : ""}`, type: "button", "data-id": s.id,
           "aria-label": `${playing ? "Pause" : "Play"} ${s.title}`,
@@ -102,6 +185,14 @@ function render() {
           ),
           state === "started" && el("div", { class: "set-progress", style: `--p:${(p.t / p.d) * 100}%` }),
           stats && socialRow(s),
+          el("p", { class: "set-actions" },
+            saving.has(s.id)
+              ? el("span", { class: "offline-btn saving", role: "status" }, `Saving… ${saving.get(s.id)}%`)
+              : offlineUrls.has(s.id)
+                ? el("button", { type: "button", class: "offline-btn saved", "data-id": s.id, "data-action": "remove-offline", "aria-label": `Saved offline. Remove ${s.title} from this device` }, "✓ Saved offline")
+                : el("button", { type: "button", class: "offline-btn", "data-id": s.id, "data-action": "save-offline" }, "⬇ Save offline"),
+            el("a", { class: "offline-btn", href: s.url, download: "", "aria-label": `Download the MP3 file of ${s.title}` }, "MP3 file"),
+          ),
           s.notes && el("details", { class: "set-notes", "data-id": s.id, ...(openNotes.has(s.id) && { open: "" }) },
             el("summary", {}, "Notes"),
             el("p", {}, s.notes),
@@ -240,7 +331,7 @@ function load(set) {
   recordPosition();
   current = set;
   heard = 0; lastTick = null;
-  audio.src = set.url;
+  audio.src = sourceFor(set);
   const p = progress[set.id];
   startAt = p && !p.done && p.t > 5 ? p.t : 0;
   const d = p?.d || set.duration;
@@ -304,6 +395,9 @@ async function share(set) {
 list.addEventListener("click", (e) => {
   const playBtn = e.target.closest(".set-play");
   if (playBtn) play(sets.find((s) => s.id === playBtn.dataset.id));
+  const act = e.target.closest("[data-action]");
+  if (act?.dataset.action === "save-offline") saveOffline(sets.find((s) => s.id === act.dataset.id));
+  if (act?.dataset.action === "remove-offline") removeOffline(sets.find((s) => s.id === act.dataset.id));
   const chip = e.target.closest(".moment-chip");
   if (chip) playAt(sets.find((s) => s.id === chip.dataset.id), Number(chip.dataset.t));
   const star = e.target.closest(".star");
@@ -350,8 +444,8 @@ async function recover() {
   recovering = true;
   attempts++;
   startAt = audio.currentTime || startAt;
-  await refreshSets(); // the file may have been renamed since this page loaded
-  audio.src = current.url;
+  if (!offlineUrls.has(current.id)) await refreshSets(); // the file may have been renamed since this page loaded
+  audio.src = sourceFor(current);
   audio.play().catch(() => {}).finally(() => (recovering = false));
 }
 
@@ -547,12 +641,18 @@ $("copy-feed").addEventListener("click", async () => {
   setTimeout(() => ($("copy-feed").textContent = "Copy"), 2000);
 });
 
+addEventListener("online", render);
+addEventListener("offline", render);
+
 // Load
 fetch("sets.json", { cache: "no-cache" })
   .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
   .then((data) => {
     sets = data.sets || [];
     api(`/stats?device=${device || ""}`).then(refreshStats).catch(() => {}); // site works without it
+    return prepareOffline().catch(() => {});
+  })
+  .then(() => {
     statusEl.textContent = sets.length ? "" : "No sets yet — come back soon.";
     render();
     // Reopen the set from a shared link (…/#1198364518), or else the last one played here.

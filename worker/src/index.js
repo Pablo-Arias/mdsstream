@@ -4,6 +4,7 @@
 //   POST /listen           { setId, device }          count a listen (once per device per day)
 //   POST /rate             { setId, device, stars }   rate 1–5 (one rating per device)
 //   POST /moment           { setId, device, t, on }   mark/unmark a good part at t seconds (30 s windows)
+//   GET  /audio/<setId>    the set's MP3, relayed with CORS so the site can save it offline
 //   POST /subscribe        { endpoint }               notify this phone of new sets
 //   POST /unsubscribe      { endpoint }
 //
@@ -28,6 +29,26 @@ export default {
     try {
       const { pathname, searchParams } = new URL(request.url);
 
+      // Relay a set's audio (only files listed in sets.json, so this is not an open proxy).
+      if (request.method === "GET" && pathname.startsWith("/audio/")) {
+        const id = decodeURIComponent(pathname.slice("/audio/".length));
+        const relay = async () => {
+          const set = (await knownSets(env)).get(id);
+          if (!set) return null;
+          const range = request.headers.get("Range");
+          return fetch(set.url, { headers: range ? { Range: range } : {} });
+        };
+        let upstream = await relay();
+        if (upstream?.status === 404) { setCache.at = 0; upstream = await relay(); } // renamed since last check
+        if (!upstream) return json({ error: "Unknown set" }, 404);
+        const headers = new Headers(cors);
+        for (const h of ["content-type", "content-length", "content-range", "accept-ranges", "etag", "last-modified"]) {
+          const v = upstream.headers.get(h);
+          if (v) headers.set(h, v);
+        }
+        return new Response(upstream.body, { status: upstream.status, headers });
+      }
+
       if (request.method === "GET" && pathname === "/stats") {
         const device = searchParams.get("device");
         return json(await stats(env, DEVICE.test(device || "") ? device : null));
@@ -42,7 +63,7 @@ export default {
         if (!known.has(body.setId)) return json({ error: "Unknown set" }, 400);
         if (pathname === "/moment") {
           const t = Number(body.t);
-          const duration = known.get(body.setId) || 6 * 3600;
+          const duration = known.get(body.setId).duration || 6 * 3600;
           if (!Number.isFinite(t) || t < 0 || t > duration + 5) return json({ error: "Bad time" }, 400);
           const bucket = Math.floor(t / BUCKET);
           if (body.on === false) {
@@ -114,7 +135,8 @@ function corsHeaders(request, env) {
   return {
     "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : env.SITE_ORIGIN,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Range",
+    "Access-Control-Expose-Headers": "Content-Length, Content-Range",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
@@ -131,7 +153,7 @@ async function fetchSets(env) {
 let setCache = { at: 0, sets: new Map() };
 async function knownSets(env) {
   if (Date.now() - setCache.at > 5 * 60 * 1000) {
-    setCache = { at: Date.now(), sets: new Map((await fetchSets(env)).map((s) => [s.id, s.duration || 0])) };
+    setCache = { at: Date.now(), sets: new Map((await fetchSets(env)).map((s) => [s.id, { duration: s.duration || 0, url: s.url }])) };
   }
   return setCache.sets;
 }
