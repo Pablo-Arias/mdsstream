@@ -55,3 +55,21 @@ GitHub pauses scheduled workflows after 60 days without commits to the repo. If 
 node scripts/build-sets.mjs   # Node 20+
 python3 -m http.server 8000   # then open http://localhost:8000
 ```
+
+## Listen counts, stars and notifications (Cloudflare Worker)
+
+`worker/` is a small Cloudflare Worker with a D1 database, live at
+`https://mdsstream-api.mdsstream.workers.dev`. It stores listen counts (once per device per
+day, after 30 s of playback), 1–5 star ratings (one per device) and push subscriptions.
+No accounts, cookies or IP addresses: the site sends an anonymous random device ID.
+Every 15 minutes it checks `sets.json` and notifies subscribers of new sets.
+
+```sh
+cd worker
+npx wrangler deploy                                        # after changing the code
+npx wrangler d1 execute mdsstream --remote --command "SELECT * FROM ratings"
+npx wrangler tail                                          # live logs
+```
+
+The push signing key is the Worker secret `VAPID_PRIVATE_JWK`; its public half is in
+`worker/wrangler.toml` and `app.js`. Replacing the key pair unsubscribes every phone.

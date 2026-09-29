@@ -1,0 +1,28 @@
+-- One row per device per set per day: a listen counts once a day per device.
+CREATE TABLE IF NOT EXISTS listens (
+  set_id TEXT NOT NULL,
+  device TEXT NOT NULL,
+  day    TEXT NOT NULL,
+  PRIMARY KEY (set_id, device, day)
+);
+
+-- One rating per device per set; rating again replaces it.
+CREATE TABLE IF NOT EXISTS ratings (
+  set_id  TEXT NOT NULL,
+  device  TEXT NOT NULL,
+  stars   INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  updated TEXT NOT NULL,
+  PRIMARY KEY (set_id, device)
+);
+
+-- Phones that asked to be notified of new sets.
+CREATE TABLE IF NOT EXISTS subscriptions (
+  endpoint TEXT PRIMARY KEY,
+  created  TEXT NOT NULL
+);
+
+-- Sets we've already sent a notification for.
+CREATE TABLE IF NOT EXISTS notified (
+  set_id TEXT PRIMARY KEY,
+  at     TEXT NOT NULL
+);

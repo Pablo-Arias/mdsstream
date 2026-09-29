@@ -216,3 +216,28 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .bottom-links { margin: 28px 0 8px; display: flex; justify-content: center; }
 .linkish.small { font-size: 13px; gap: 6px; color: var(--muted); }
 .linkish.small svg { width: 15px; height: 15px; }
+
+/* Stars + listens */
+.set-social { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.stars { display: inline-flex; }
+.star {
+  border: 0; background: none; padding: 2px 3px; font-size: 20px; line-height: 1;
+  color: var(--line); transition: color .1s, transform .1s;
+}
+.star.on { color: var(--accent); }
+@media (hover: hover) {
+  .stars:hover .star { color: var(--accent); }
+  .stars .star:hover ~ .star { color: var(--line); }
+}
+.star:active { transform: scale(1.2); }
+.social-summary { font: 12.5px var(--mono); color: var(--muted); }
+
+/* Notify button */
+.notify {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 9px 16px;
+  background: transparent; color: var(--text); font: 500 15px var(--font);
+}
+.notify[hidden] { display: none; }
+.notify.on { border-color: var(--accent); color: var(--accent); }
+.notify svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

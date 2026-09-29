@@ -21,6 +21,26 @@ function recordPosition(done = false) {
   saveProgress();
 }
 
+// Listen counts, star ratings and notifications live on a small Cloudflare Worker.
+// It only ever sees an anonymous random ID for this device, never who you are.
+const API = location.hostname === "localhost" ? "http://localhost:8787" : "https://mdsstream-api.mdsstream.workers.dev";
+const DEVICE_KEY = "mdfs.device";
+let device = null;
+try {
+  device = localStorage.getItem(DEVICE_KEY);
+  if (!device) localStorage.setItem(DEVICE_KEY, (device = crypto.randomUUID()));
+} catch {}
+let stats = null; // { sets: { [id]: { listens, rating, ratings } }, mine: { [id]: stars } }
+
+async function api(path, body) {
+  const res = await fetch(`${API}${path}`, body
+    ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+    : undefined);
+  if (!res.ok) throw new Error(`${path}: ${res.status}`);
+  return res.json();
+}
+const refreshStats = (data) => { stats = data; render(); };
+
 let sets = [];
 let current = null;
 let filter = "all";
@@ -81,6 +101,7 @@ function render() {
             el("span", {}, fmtDate(s.date)),
           ),
           state === "started" && el("div", { class: "set-progress", style: `--p:${(p.t / p.d) * 100}%` }),
+          stats && socialRow(s),
           s.notes && el("details", { class: "set-notes", "data-id": s.id, ...(openNotes.has(s.id) && { open: "" }) },
             el("summary", {}, "Notes"),
             el("p", {}, s.notes),
@@ -91,6 +112,47 @@ function render() {
     }),
   );
   statusEl.textContent = sets.length && !shown.length ? "No sets of this type yet." : "";
+}
+
+// Stars (tap to rate; yours are highlighted) + average and listen count.
+function socialRow(s) {
+  const st = stats.sets[s.id] || { listens: 0, rating: null, ratings: 0 };
+  const mine = stats.mine[s.id] || 0;
+  const summary = [
+    st.ratings ? `${st.rating.toFixed(1)} (${st.ratings})` : "Not rated yet",
+    `${st.listens} ${st.listens === 1 ? "listen" : "listens"}`,
+  ].join(" · ");
+  return el("div", { class: "set-social" },
+    el("span", { class: "stars", role: "group", "aria-label": mine ? `Your rating: ${mine} of 5` : "Rate this set" },
+      ...[1, 2, 3, 4, 5].map((n) => el("button", {
+        type: "button", class: `star${n <= mine ? " on" : ""}`, "data-id": s.id, "data-stars": n,
+        "aria-label": `Rate ${n} star${n > 1 ? "s" : ""}`, "aria-pressed": String(n === mine),
+      }, "★")),
+    ),
+    el("span", { class: "social-summary" }, summary),
+  );
+}
+
+async function rate(setId, n) {
+  if (!device) return;
+  stats.mine[setId] = n; // show it right away
+  render();
+  try { refreshStats(await api("/rate", { setId, device, stars: n })); toast("Thanks for rating!"); }
+  catch { toast("Couldn't save your rating. Try again later."); }
+}
+
+// A listen counts after 30 s of actual playback (seeking doesn't count), once per page visit.
+const LISTEN_AFTER = 30;
+let heard = 0, lastTick = null;
+const counted = new Set();
+function trackListen() {
+  const t = audio.currentTime;
+  if (lastTick !== null && t > lastTick && t - lastTick < 2) heard += t - lastTick;
+  lastTick = t;
+  if (heard >= LISTEN_AFTER && current && device && !counted.has(current.id)) {
+    counted.add(current.id);
+    api("/listen", { setId: current.id, device }).then(refreshStats).catch(() => counted.delete(current.id));
+  }
 }
 
 // The audio isn't fetched until play is pressed, so until then the position lives in
@@ -113,6 +175,7 @@ function showPosition(t, d) {
 function load(set) {
   recordPosition();
   current = set;
+  heard = 0; lastTick = null;
   audio.src = set.url;
   const p = progress[set.id];
   startAt = p && !p.done && p.t > 5 ? p.t : 0;
@@ -176,6 +239,8 @@ async function share(set) {
 list.addEventListener("click", (e) => {
   const playBtn = e.target.closest(".set-play");
   if (playBtn) play(sets.find((s) => s.id === playBtn.dataset.id));
+  const star = e.target.closest(".star");
+  if (star) rate(star.dataset.id, Number(star.dataset.stars));
   const shareBtn = e.target.closest(".set-share");
   if (shareBtn) share(sets.find((s) => s.id === shareBtn.dataset.id));
 });
@@ -228,7 +293,9 @@ audio.addEventListener("waiting", () => {
 audio.addEventListener("playing", () => clearTimeout(stallTimer));
 
 let lastSave = 0;
+audio.addEventListener("seeking", () => (lastTick = null));
 audio.addEventListener("timeupdate", () => {
+  trackListen();
   if (Date.now() - lastSave > 5000) { lastSave = Date.now(); recordPosition(); }
   if (seeking) return;
   seek.value = Math.floor(audio.currentTime);
@@ -313,6 +380,65 @@ installBtn.addEventListener("click", async () => {
   installHelp.showModal();
 });
 
+// New-set notifications (Web Push). iPhone only allows them once the site is on the
+// Home Screen, so there the button first explains how to add it.
+const VAPID_PUBLIC_KEY = "BJjiDXMj4aCHPZsf1L5qgLw23krlo9RmLaRr-thDlVZpsKDZjkdpenQsROZz5xdY8Zc7-30yv2uqvScbdbvP2Rg";
+const notifyBtn = $("notify"), notifyLabel = $("notify-label");
+const pushSupported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+let swReady = null;
+if ("serviceWorker" in navigator) swReady = navigator.serviceWorker.register("sw.js").then(() => navigator.serviceWorker.ready).catch(() => null);
+
+const b64ToBytes = (b64) => Uint8Array.from(atob(b64.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+
+async function currentSubscription() {
+  const reg = await swReady;
+  return reg ? reg.pushManager.getSubscription() : null;
+}
+async function showNotifyState() {
+  if (pushSupported) {
+    const sub = await currentSubscription().catch(() => null);
+    notifyBtn.classList.toggle("on", !!sub);
+    notifyLabel.textContent = sub ? "Notifications on ✓" : Notification.permission === "denied" ? "Notifications blocked" : "Notify me of new sets";
+    notifyBtn.hidden = false;
+  } else if (isIOS && !isInstalled) {
+    notifyBtn.hidden = false; // explains the Home Screen step
+  }
+}
+
+notifyBtn.addEventListener("click", async () => {
+  if (!pushSupported) {
+    $("install-steps").innerHTML = [
+      "On iPhone, notifications only work from the Home Screen app.",
+      `Tap the Share button ${SHARE_GLYPH}, then <b>Add to Home Screen</b>.`,
+      "Open MDS from your Home Screen and tap <b>Notify me of new sets</b> again.",
+    ].map((t) => `<li>${t}</li>`).join("");
+    installHelp.showModal();
+    return;
+  }
+  try {
+    const existing = await currentSubscription();
+    if (existing) { // turn off
+      await api("/unsubscribe", { endpoint: existing.endpoint }).catch(() => {});
+      await existing.unsubscribe();
+      toast("Notifications off");
+    } else {
+      if ((await Notification.requestPermission()) !== "granted") {
+        toast("Notifications are blocked. You can allow them in your browser settings.");
+      } else {
+        const reg = await swReady;
+        const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUBLIC_KEY) });
+        await api("/subscribe", { endpoint: sub.endpoint });
+        toast("You'll be notified of new sets");
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    toast("Couldn't change notifications. Try again later.");
+  }
+  showNotifyState();
+});
+showNotifyState();
+
 // "Listen in your podcast app": one-tap links for common apps, or copy the feed URL.
 const feedUrl = new URL("feed.xml", location.href).href;
 const feedNoScheme = feedUrl.replace(/^https?:\/\//, "");
@@ -333,6 +459,7 @@ fetch("sets.json", { cache: "no-cache" })
   .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
   .then((data) => {
     sets = data.sets || [];
+    api(`/stats?device=${device || ""}`).then(refreshStats).catch(() => {}); // site works without it
     statusEl.textContent = sets.length ? "" : "No sets yet — come back soon.";
     render();
     // Reopen the set from a shared link (…/#1198364518), or else the last one played here.

@@ -1,0 +1,19 @@
+name = "mdsstream-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Check for new sets and notify subscribers.
+[triggers]
+crons = ["*/15 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mdsstream"
+database_id = "8f420eaa-9055-4e10-83b3-6f07d0f5b39e"
+
+[vars]
+SITE_ORIGIN = "https://pablo-arias.github.io"
+SETS_URL = "https://pablo-arias.github.io/mdsstream/sets.json"
+VAPID_SUBJECT = "https://pablo-arias.github.io/mdsstream/"
+VAPID_PUBLIC_KEY = "BJjiDXMj4aCHPZsf1L5qgLw23krlo9RmLaRr-thDlVZpsKDZjkdpenQsROZz5xdY8Zc7-30yv2uqvScbdbvP2Rg"
+# Secret (set with `wrangler secret put VAPID_PRIVATE_JWK`, never committed): VAPID_PRIVATE_JWK
