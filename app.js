@@ -89,7 +89,7 @@ function render() {
           el("p", { class: "set-title" }, s.title),
           el("p", { class: "set-state" }, stateLabel),
           s.authors && el("p", { class: "set-author" },
-            el("span", { class: "set-author-label" }, s.authors.length > 1 ? "Authors:" : "Author:"),
+            el("span", { class: "set-author-label" }, s.authors.length > 1 ? "Artists:" : "Artist:"),
             ` ${s.authors.join(" & ")}`,
           ),
           el("p", { class: "set-meta" },
