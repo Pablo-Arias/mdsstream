@@ -23,6 +23,7 @@ MDS_Ambient techno_Focus_120_Atmospheric and polyrhythmic snippet.mp3
 ```
 
 - **Objective** is one of `Let's go`, `Focus`, `Experimentation` (any case).
+- **Several values in one field**: separate them with ` - ` (spaces around the dash), e.g. `Dub - Dub techno` or `Focus - Experimentation` (the set then shows under both filters), or `MDS - Guest` for two authors.
 - **BPM** is a number. If it isn't, it's shown as a free-text category instead.
 - If the name contains `_`, only `_` separates fields, so ` - ` can be used inside one (`Dub - Dub techno`). Otherwise ` - ` separates them.
 - Files that don't follow the pattern still appear, with the file name as the title.

@@ -9,10 +9,18 @@
       "type": "audio/mpeg",
       "duration": 3871.7,
       "title": "High energy modular",
-      "author": "MDS",
-      "genre": "Modular techno",
-      "objective": "lets-go",
-      "objectiveLabel": "Let's go",
+      "authors": [
+        "MDS"
+      ],
+      "genres": [
+        "Modular techno"
+      ],
+      "objectives": [
+        {
+          "id": "lets-go",
+          "label": "Let's go"
+        }
+      ],
       "bpm": 135
     },
     {
@@ -24,10 +32,23 @@
       "type": "audio/mpeg",
       "duration": 3423.9,
       "title": "First time improvising Dub and Dub techno, took some time to start and there's some feedback delays but interesting experience",
-      "author": "MDS",
-      "genre": "Dub - Dub techno",
-      "objective": "focus - experimentation",
-      "objectiveLabel": "focus - Experimentation",
+      "authors": [
+        "MDS"
+      ],
+      "genres": [
+        "Dub",
+        "Dub techno"
+      ],
+      "objectives": [
+        {
+          "id": "focus",
+          "label": "Focus"
+        },
+        {
+          "id": "experimentation",
+          "label": "Experimentation"
+        }
+      ],
       "bpm": 90
     },
     {
@@ -39,10 +60,18 @@
       "type": "audio/mpeg",
       "duration": 223.7,
       "title": "Short atmospheric and polyrhythmic snippet",
-      "author": "MDS",
-      "genre": "Ambient techno",
-      "objective": "focus",
-      "objectiveLabel": "Focus",
+      "authors": [
+        "MDS"
+      ],
+      "genres": [
+        "Ambient techno"
+      ],
+      "objectives": [
+        {
+          "id": "focus",
+          "label": "Focus"
+        }
+      ],
       "bpm": 120
     }
   ]

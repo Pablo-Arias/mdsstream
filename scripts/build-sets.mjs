@@ -81,6 +81,7 @@ async function listFiles() {
 
 // --- File name convention ---------------------------------------------------
 // Author _ Genre _ Objective _ BPM _ Description   ("_" as separator, or " - " when there's no "_")
+// Inside a "_" field, " - " separates several values: "Dub - Dub techno", "Focus - Experimentation".
 // Anything that doesn't match still shows up, with the file name as its title.
 
 const OBJECTIVES = [
@@ -96,14 +97,17 @@ export function parseName(fileName) {
   if (parts.length < 5) return { title: base };
 
   const [author, genre, objectiveRaw, fourth, ...rest] = parts;
-  const objective = OBJECTIVES.find((o) => o.test.test(objectiveRaw));
+  const values = (field) => [...new Set(field.split(/\s+-\s+/).map((v) => v.trim()).filter(Boolean))];
+  const objectives = values(objectiveRaw).map((raw) => {
+    const known = OBJECTIVES.find((o) => o.test.test(raw));
+    return known ? { id: known.id, label: known.label } : { id: raw.toLowerCase(), label: raw };
+  });
   const bpm = fourth.match(/^(\d{2,3}(?:\.\d+)?)\s*(?:bpm)?$/i);
   return {
     title: rest.join(" - "),
-    author,
-    genre,
-    objective: objective ? objective.id : objectiveRaw.toLowerCase(),
-    objectiveLabel: objective ? objective.label : objectiveRaw,
+    authors: values(author),
+    genres: values(genre),
+    objectives: objectives.filter((o, i) => objectives.findIndex((x) => x.id === o.id) === i),
     ...(bpm ? { bpm: Number(bpm[1]) } : { category: fourth }),
   };
 }
@@ -116,10 +120,12 @@ const escapeXml = (s) =>
 function buildFeed(sets, defaultCover) {
   const items = sets
     .map((s) => {
-      const meta = [s.genre, s.objectiveLabel, s.bpm && `${s.bpm} BPM`, s.category].filter(Boolean).join(" · ");
+      const meta = [...(s.genres || []), ...(s.objectives || []).map((o) => o.label), s.bpm && `${s.bpm} BPM`, s.category]
+        .filter(Boolean)
+        .join(" · ");
       const desc = [meta, s.notes].filter(Boolean).join("\n\n");
       return `    <item>
-      <title>${escapeXml(s.title)}</title>${s.author ? `\n      <itunes:author>${escapeXml(s.author)}</itunes:author>` : ""}
+      <title>${escapeXml(s.title)}</title>${s.authors ? `\n      <itunes:author>${escapeXml(s.authors.join(" & "))}</itunes:author>` : ""}
       <description>${escapeXml(desc || s.title)}</description>
       <guid isPermaLink="false">${escapeXml(s.id)}</guid>
       <pubDate>${new Date(s.date).toUTCString()}</pubDate>

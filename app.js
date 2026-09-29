@@ -27,6 +27,7 @@ let filter = "all";
 const openNotes = new Set(); // survives re-renders
 
 const ICON_SHARE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
+const inFilter = (s) => filter === "all" || (s.objectives || []).some((o) => o.id === filter);
 const setLink = (set) => `${location.origin}${location.pathname}#${set.id}`;
 
 const fmtTime = (s) => {
@@ -49,7 +50,7 @@ function el(tag, attrs = {}, ...children) {
 }
 
 function render() {
-  const shown = sets.filter((s) => filter === "all" || s.objective === filter);
+  const shown = sets.filter(inFilter);
   list.replaceChildren(
     ...shown.map((s) => {
       const isCurrent = current && current.id === s.id;
@@ -68,9 +69,9 @@ function render() {
           el("p", { class: "set-title" }, s.title),
           el("p", { class: "set-state" }, stateLabel),
           el("p", { class: "set-meta" },
-            s.author && el("span", { class: "set-author" }, s.author),
-            s.objectiveLabel && el("span", { class: `badge ${s.objective}` }, s.objectiveLabel),
-            s.genre && el("span", {}, s.genre),
+            s.authors && el("span", { class: "set-author" }, s.authors.join(" & ")),
+            ...(s.objectives || []).map((o) => el("span", { class: `badge ${o.id}` }, o.label)),
+            s.genres && el("span", {}, s.genres.join(" · ")),
             s.bpm && el("span", {}, `${s.bpm} BPM`),
             s.category && el("span", {}, s.category),
             s.duration && el("span", {}, fmtTime(s.duration)),
@@ -122,8 +123,8 @@ function load(set) {
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: set.title,
-      artist: set.author || "MDS",
-      album: [set.genre, set.objectiveLabel].filter(Boolean).join(" · ") || "Vercors Stream",
+      artist: set.authors?.join(" & ") || "MDS",
+      album: [...(set.genres || []), ...(set.objectives || []).map((o) => o.label)].join(" · ") || "Vercors Stream",
       artwork: set.cover
         ? [{ src: set.cover.url }]
         : [{ src: "icon-512.png", sizes: "512x512", type: "image/png" }],
@@ -143,7 +144,7 @@ function play(set) {
 
 // Next/previous in the list as it's currently shown (newest first, filter applied).
 function neighbour(step) {
-  const shown = sets.filter((s) => filter === "all" || s.objective === filter);
+  const shown = sets.filter(inFilter);
   const i = shown.findIndex((s) => s.id === current?.id);
   return i === -1 ? null : shown[i + step] || null;
 }
