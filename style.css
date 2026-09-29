@@ -87,6 +87,20 @@ h1 { margin: 10px 0 8px; font-size: clamp(56px, 14vw, 104px); line-height: .9; l
 }
 .filters button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
 
+/* What each type of set is for */
+.types { margin: -6px 0 20px; display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.types > div { display: grid; grid-template-columns: 9.5em 1fr; gap: 12px; }
+.types dt { font: 500 12.5px/1.6 var(--mono); }
+.types dd { margin: 0; line-height: 1.5; }
+.types:not([data-filter="all"]) > div { display: none; }
+.types[data-filter="lets-go"] > [data-type="lets-go"],
+.types[data-filter="focus"] > [data-type="focus"],
+.types[data-filter="experimentation"] > [data-type="experimentation"] { display: grid; }
+@media (max-width: 480px) {
+  .types > div { grid-template-columns: 1fr; gap: 0; }
+  .types { gap: 10px; }
+}
+
 /* Set list */
 .sets { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .set {

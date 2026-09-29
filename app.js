@@ -136,6 +136,7 @@ document.querySelector(".filters").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-filter]");
   if (!btn) return;
   filter = btn.dataset.filter;
+  $("types").dataset.filter = filter;
   for (const b of e.currentTarget.children) b.setAttribute("aria-pressed", String(b === btn));
   render();
 });
