@@ -189,6 +189,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 
 /* Curated line + podcast dialog */
 .curated { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+.curated + .curated { margin-top: 4px; }
 .linkish {
   display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 6px 0;
   color: var(--accent); font: 500 14px var(--font); text-decoration: underline; text-underline-offset: 3px;
