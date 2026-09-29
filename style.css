@@ -186,3 +186,29 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
   margin: 0; padding: 8px 16px; border-radius: 999px; background: var(--text); color: var(--bg); font-size: 14px;
 }
 .toast[hidden] { display: none; }
+
+/* Curated line + podcast dialog */
+.curated { margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+.linkish {
+  display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 6px 0;
+  color: var(--accent); font: 500 14px var(--font); text-decoration: underline; text-underline-offset: 3px;
+}
+.linkish svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.sheet p { margin: 0 0 14px; font-size: 15px; line-height: 1.5; }
+.sheet .sheet-label { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.apps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.apps a {
+  display: grid; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface-2); color: var(--text); text-decoration: none; font-weight: 500; font-size: 14px;
+}
+.apps small { font: 11px var(--mono); color: var(--muted); font-weight: 400; }
+.copy { display: flex; gap: 8px; margin-bottom: 14px; }
+.copy input {
+  flex: 1; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--text); font: 12px var(--mono);
+}
+.copy button { border: 0; border-radius: 8px; padding: 0 14px; background: var(--text); color: var(--bg); font-weight: 500; }
+.what-rss { margin-bottom: 16px; font-size: 14px; }
+.what-rss summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.what-rss p { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.set-author { color: var(--text); }

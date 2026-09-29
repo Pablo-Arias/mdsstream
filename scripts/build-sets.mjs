@@ -119,7 +119,7 @@ function buildFeed(sets, defaultCover) {
       const meta = [s.genre, s.objectiveLabel, s.bpm && `${s.bpm} BPM`, s.category].filter(Boolean).join(" · ");
       const desc = [meta, s.notes].filter(Boolean).join("\n\n");
       return `    <item>
-      <title>${escapeXml(s.title)}</title>
+      <title>${escapeXml(s.title)}</title>${s.author ? `\n      <itunes:author>${escapeXml(s.author)}</itunes:author>` : ""}
       <description>${escapeXml(desc || s.title)}</description>
       <guid isPermaLink="false">${escapeXml(s.id)}</guid>
       <pubDate>${new Date(s.date).toUTCString()}</pubDate>

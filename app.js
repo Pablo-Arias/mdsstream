@@ -68,6 +68,7 @@ function render() {
           el("p", { class: "set-title" }, s.title),
           el("p", { class: "set-state" }, stateLabel),
           el("p", { class: "set-meta" },
+            s.author && el("span", { class: "set-author" }, s.author),
             s.objectiveLabel && el("span", { class: `badge ${s.objective}` }, s.objectiveLabel),
             s.genre && el("span", {}, s.genre),
             s.bpm && el("span", {}, `${s.bpm} BPM`),
@@ -121,7 +122,7 @@ function load(set) {
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: set.title,
-      artist: "MDS",
+      artist: set.author || "MDS",
       album: [set.genre, set.objectiveLabel].filter(Boolean).join(" · ") || "Vercors Stream",
       artwork: set.cover
         ? [{ src: set.cover.url }]
@@ -238,7 +239,7 @@ if ("mediaSession" in navigator) {
 // A focused button already reacts to Space by itself, so leave those alone.
 addEventListener("keydown", (e) => {
   if (e.code !== "Space" || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-  if (e.target.closest("button, a, textarea, select, [contenteditable], input:not([type=range])") || $("install-help").open) return;
+  if (e.target.closest("button, a, textarea, select, [contenteditable], input:not([type=range])") || document.querySelector("dialog[open]")) return;
   e.preventDefault();
   if (current) audio.paused ? audio.play() : audio.pause();
   else list.querySelector(".set-play")?.click();
@@ -284,6 +285,21 @@ installBtn.addEventListener("click", async () => {
       ];
   $("install-steps").innerHTML = steps.map((t) => `<li>${t}</li>`).join("");
   installHelp.showModal();
+});
+
+// "Listen in your podcast app": one-tap links for common apps, or copy the feed URL.
+const feedUrl = new URL("feed.xml", location.href).href;
+const feedNoScheme = feedUrl.replace(/^https?:\/\//, "");
+$("feed-url").value = feedUrl;
+$("app-apple").href = `podcast://${feedNoScheme}`;
+$("app-overcast").href = `overcast://x-callback-url/add?url=${encodeURIComponent(feedUrl)}`;
+$("app-antennapod").href = `https://antennapod.org/deeplink/subscribe?url=${encodeURIComponent(feedUrl)}`;
+$("app-pocketcasts").href = `pktc://subscribe/${feedNoScheme}`;
+$("podcast").addEventListener("click", () => $("podcast-help").showModal());
+$("copy-feed").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(feedUrl); $("copy-feed").textContent = "Copied"; }
+  catch { $("feed-url").select(); }
+  setTimeout(() => ($("copy-feed").textContent = "Copy"), 2000);
 });
 
 // Load

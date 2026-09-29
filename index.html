@@ -28,12 +28,16 @@
       <p class="eyebrow">Vercors Stream</p>
       <h1>MDS</h1>
       <p class="tagline">MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ, for free.</p>
+      <p class="curated">A selection curated by MDS. Other artists may join in.</p>
       <p class="links">
         <button type="button" class="install" id="install" hidden>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
           Add to Home Screen
         </button>
-        <a href="feed.xml">Podcast feed (RSS)</a>
+        <button type="button" class="linkish" id="podcast">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0M12 13v8"/><circle cx="12" cy="12" r="1"/></svg>
+          Listen in your podcast app
+        </button>
       </p>
     </div>
   </header>
@@ -42,6 +46,28 @@
     <h2 id="install-title">Add MDS to your Home Screen</h2>
     <ol id="install-steps"></ol>
     <form method="dialog"><button class="sheet-close">Got it</button></form>
+  </dialog>
+
+  <dialog class="sheet" id="podcast-help" aria-labelledby="podcast-title">
+    <h2 id="podcast-title">Listen in your podcast app</h2>
+    <p>Follow MDS like a podcast. New sets show up in your app by themselves, often with a notification, and you can download them to listen offline. No account or email needed.</p>
+    <p class="sheet-label">Open directly in:</p>
+    <div class="apps">
+      <a id="app-apple">Apple Podcasts <small>iPhone</small></a>
+      <a id="app-overcast">Overcast <small>iPhone</small></a>
+      <a id="app-antennapod" target="_blank" rel="noopener">AntennaPod <small>Android</small></a>
+      <a id="app-pocketcasts">Pocket Casts <small>iPhone · Android</small></a>
+    </div>
+    <p class="sheet-label">Another app? Copy this link and paste it where the app says <b>Add by URL</b> or <b>Add podcast by RSS</b>:</p>
+    <div class="copy">
+      <input id="feed-url" readonly aria-label="Podcast feed link">
+      <button type="button" id="copy-feed">Copy</button>
+    </div>
+    <details class="what-rss">
+      <summary>What's an RSS feed?</summary>
+      <p>A small public file that lists every set (title, date, audio link). Podcast apps check it regularly, so when a new set is uploaded they pick it up without you visiting the site. Every podcast works this way. You can also add it to a news reader like Feedly or Inoreader.</p>
+    </details>
+    <form method="dialog"><button class="sheet-close">Close</button></form>
   </dialog>
 
   <main class="wrap">
