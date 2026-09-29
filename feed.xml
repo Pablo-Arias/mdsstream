@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>MDS · Vercors Stream</title>
     <link>https://pablo-arias.github.io/mdsstream/</link>
+    <atom:link href="https://pablo-arias.github.io/mdsstream/feed.xml" rel="self" type="application/rss+xml"/>
     <description>MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ, for free.</description>
     <language>en</language>
     <itunes:author>MDS</itunes:author>
-    <itunes:image href="https://pablo-arias.github.io/mdsstream/icon-512.png"/>
+    <itunes:image href="https://pablo-arias.github.io/mdsstream/podcast-cover.jpg"/>
+    <image>
+      <url>https://pablo-arias.github.io/mdsstream/podcast-cover.jpg</url>
+      <title>MDS · Vercors Stream</title>
+      <link>https://pablo-arias.github.io/mdsstream/</link>
+    </image>
+    <itunes:type>episodic</itunes:type>
     <itunes:category text="Music"/>
     <itunes:explicit>false</itunes:explicit>
     <item>
@@ -15,7 +22,7 @@
       <description>Modular techno · Let&apos;s go · 135 BPM</description>
       <guid isPermaLink="false">1198333360</guid>
       <pubDate>Mon, 28 Sep 2026 20:50:35 GMT</pubDate>
-      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Modular%20techno%20_%20Let&apos;s%20go%20_%20135%20_%20High%20energy%20modular.mp3" length="154868505" type="audio/mpeg"/>
+      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Modular%20techno%20_%20Let%27s%20go%20_%20135%20_%20High%20energy%20modular.mp3" length="154868505" type="audio/mpeg"/>
       <link>https://pablo-arias.github.io/mdsstream/#1198333360</link>
       <itunes:duration>3872</itunes:duration>
     </item>
@@ -25,7 +32,7 @@
       <description>Dub · Dub techno · Focus · Experimentation · 90 BPM</description>
       <guid isPermaLink="false">1197317290</guid>
       <pubDate>Sun, 27 Sep 2026 21:14:27 GMT</pubDate>
-      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Dub%20-%20Dub%20techno%20_%20focus%20-%20Experimentation_%2090%20_%20First%20time%20improvising%20Dub%20and%20Dub%20techno%2C%20took%20some%20time%20to%20start%20and%20there&apos;s%20some%20feedback%20delays%20but%20interesting%20experience.mp3" length="136956864" type="audio/mpeg"/>
+      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Dub%20-%20Dub%20techno%20_%20focus%20-%20Experimentation_%2090%20_%20First%20time%20improvising%20Dub%20and%20Dub%20techno%2C%20took%20some%20time%20to%20start%20and%20there%27s%20some%20feedback%20delays%20but%20interesting%20experience.mp3" length="136956864" type="audio/mpeg"/>
       <link>https://pablo-arias.github.io/mdsstream/#1197317290</link>
       <itunes:duration>3424</itunes:duration>
     </item>

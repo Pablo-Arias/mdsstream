@@ -117,7 +117,7 @@ export function parseName(fileName) {
 const escapeXml = (s) =>
   String(s).replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]);
 
-function buildFeed(sets, defaultCover) {
+function buildFeed(sets) {
   const items = sets
     .map((s) => {
       const meta = [...(s.genres || []), ...(s.objectives || []).map((o) => o.label), s.bpm && `${s.bpm} BPM`, s.category]
@@ -137,14 +137,21 @@ function buildFeed(sets, defaultCover) {
     })
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>MDS · Vercors Stream</title>
     <link>${SITE_URL}/</link>
+    <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml"/>
     <description>MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ, for free.</description>
     <language>en</language>
     <itunes:author>MDS</itunes:author>
-    <itunes:image href="${escapeXml(defaultCover?.url || `${SITE_URL}/icon-512.png`)}"/>
+    <itunes:image href="${SITE_URL}/podcast-cover.jpg"/>
+    <image>
+      <url>${SITE_URL}/podcast-cover.jpg</url>
+      <title>MDS · Vercors Stream</title>
+      <link>${SITE_URL}/</link>
+    </image>
+    <itunes:type>episodic</itunes:type>
     <itunes:category text="Music"/>
     <itunes:explicit>false</itunes:explicit>
 ${items}
@@ -165,7 +172,9 @@ async function writeIfChanged(path, content) {
 // "cover.jpg" on its own is the default cover for every set without one.
 
 const stem = (name) => name.replace(/\.[^.]+$/, "").trim().toLowerCase();
-const fileUrl = (name) => `${davBase}/${encodeURIComponent(name)}`;
+// Stricter than encodeURIComponent: some podcast apps reject raw ' ( ) ! * in links.
+const encodeStrict = (s) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+const fileUrl = (name) => `${davBase}/${encodeStrict(name)}`;
 
 // Nextcloud makes resized previews; use one for the list when it's available.
 async function coverFor(file) {
@@ -224,5 +233,5 @@ sets.sort((a, b) => b.date.localeCompare(a.date));
 
 // No timestamp in the JSON, so the file (and the git history) only changes when the sets change.
 const changedJson = await writeIfChanged("sets.json", JSON.stringify({ sets }, null, 2) + "\n");
-const changedFeed = await writeIfChanged("feed.xml", buildFeed(sets, defaultCover));
+const changedFeed = await writeIfChanged("feed.xml", buildFeed(sets));
 console.log(`${sets.length} sets · sets.json ${changedJson ? "updated" : "unchanged"} · feed.xml ${changedFeed ? "updated" : "unchanged"}`);
