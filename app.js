@@ -8,6 +8,7 @@ const ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v
 // What this device has played: { [setId]: { t: seconds, d: duration, done: bool } }.
 // Stored in the browser only — no account, nothing leaves the phone.
 const STORE_KEY = "mdfs.progress";
+const LAST_KEY = "mdfs.last";
 let progress = {};
 try { progress = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch {}
 const saveProgress = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch {} };
@@ -76,27 +77,35 @@ function render() {
   statusEl.textContent = sets.length && !shown.length ? "No sets of this type yet." : "";
 }
 
-// Start where this device left off (unless the set was finished — then from the top).
-function resumeIfStarted(set) {
-  const p = progress[set.id];
-  if (p && !p.done && p.t > 5) {
-    audio.addEventListener("loadedmetadata", () => (audio.currentTime = p.t), { once: true });
-  }
+// The audio isn't fetched until play is pressed, so until then the position lives in
+// `startAt` and the bar shows the saved values.
+let startAt = 0;
+const loaded = () => audio.readyState >= 1;
+const position = () => (loaded() ? audio.currentTime : startAt);
+function setPosition(t) {
+  if (loaded()) audio.currentTime = t;
+  else { startAt = t; showPosition(t, progress[current.id]?.d); }
+}
+function showPosition(t, d) {
+  if (d) { seek.max = Math.floor(d); $("dur").textContent = fmtTime(d); }
+  seek.value = Math.floor(t);
+  $("cur").textContent = fmtTime(t);
 }
 
-function play(set) {
-  if (current && current.id === set.id) {
-    audio.paused ? audio.play() : audio.pause();
-    return;
-  }
+// Put a set in the player without playing it. Starts where this device left off,
+// unless the set was finished — then from the top.
+function load(set) {
   recordPosition();
   current = set;
   audio.src = set.url;
-  resumeIfStarted(set);
-  audio.play().catch(() => {});
+  const p = progress[set.id];
+  startAt = p && !p.done && p.t > 5 ? p.t : 0;
+  showPosition(startAt, p?.d);
+  if (!p?.d) $("dur").textContent = fmtTime(NaN);
   player.hidden = false;
   $("now-title").textContent = set.title;
   history.replaceState(null, "", `#${set.id}`);
+  try { localStorage.setItem(LAST_KEY, set.id); } catch {}
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: set.title,
@@ -105,6 +114,15 @@ function play(set) {
       artwork: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml" }],
     });
   }
+}
+
+function play(set) {
+  if (current && current.id === set.id) {
+    audio.paused ? audio.play() : audio.pause();
+    return;
+  }
+  load(set);
+  audio.play().catch(() => {});
   render();
 }
 
@@ -123,14 +141,15 @@ document.querySelector(".filters").addEventListener("click", (e) => {
 });
 
 $("toggle").addEventListener("click", () => (audio.paused ? audio.play() : audio.pause()));
-$("back").addEventListener("click", () => (audio.currentTime = Math.max(0, audio.currentTime - 15)));
-$("fwd").addEventListener("click", () => (audio.currentTime += 30));
+$("back").addEventListener("click", () => setPosition(Math.max(0, position() - 15)));
+$("fwd").addEventListener("click", () => setPosition(position() + 30));
 
 let seeking = false;
 seek.addEventListener("input", () => { seeking = true; $("cur").textContent = fmtTime(+seek.value); });
-seek.addEventListener("change", () => { audio.currentTime = +seek.value; seeking = false; });
+seek.addEventListener("change", () => { setPosition(+seek.value); seeking = false; });
 
 audio.addEventListener("loadedmetadata", () => {
+  if (startAt) { audio.currentTime = startAt; startAt = 0; }
   seek.max = Math.floor(audio.duration) || 0;
   $("dur").textContent = fmtTime(audio.duration);
 });
@@ -158,7 +177,7 @@ if ("mediaSession" in navigator) {
   ms.setActionHandler("pause", () => audio.pause());
   ms.setActionHandler("seekbackward", () => $("back").click());
   ms.setActionHandler("seekforward", () => $("fwd").click());
-  ms.setActionHandler("seekto", (d) => (audio.currentTime = d.seekTime));
+  ms.setActionHandler("seekto", (d) => setPosition(d.seekTime));
 }
 
 // Space = play/pause (starts the first listed set if nothing is loaded yet).
@@ -220,16 +239,16 @@ fetch("sets.json", { cache: "no-cache" })
     sets = data.sets || [];
     statusEl.textContent = sets.length ? "" : "No sets yet — come back soon.";
     render();
-    // A shared link like …/#1198364518 highlights that set (autoplay is blocked by browsers).
+    // Reopen the set from a shared link (…/#1198364518), or else the last one played here.
+    // Browsers block autoplay, so it waits in the player at its saved position.
+    let lastId = null;
+    try { lastId = localStorage.getItem(LAST_KEY); } catch {}
     const linked = sets.find((s) => `#${s.id}` === location.hash);
-    if (linked) {
-      current = linked;
-      $("now-title").textContent = linked.title;
-      audio.src = linked.url;
-      resumeIfStarted(linked);
-      player.hidden = false;
+    const restored = linked || sets.find((s) => s.id === lastId);
+    if (restored) {
+      load(restored);
       render();
-      $(`set-${linked.id}`)?.scrollIntoView({ block: "center" });
+      if (linked) $(`set-${linked.id}`)?.scrollIntoView({ block: "center" });
     }
   })
   .catch(() => (statusEl.textContent = "Couldn't load the sets. Try again in a moment."));
