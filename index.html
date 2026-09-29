@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MDFS · Vercors Stream</title>
+  <meta name="description" content="MDFS streaming sporadically from the Vercors natural park on this website.">
+  <meta name="theme-color" content="#0f1512">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="alternate" type="application/rss+xml" title="MDFS · Vercors Stream" href="feed.xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero">
+    <svg class="ridge" viewBox="0 0 1200 160" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 160 L0 118 L90 104 L150 112 L230 70 L300 76 L360 40 L470 38 L520 58 L600 30 L700 32 L760 64 L840 60 L900 88 L980 80 L1060 104 L1130 96 L1200 110 L1200 160 Z"/>
+    </svg>
+    <div class="wrap">
+      <p class="eyebrow">Vercors Stream</p>
+      <h1>MDFS</h1>
+      <p class="tagline">MDFS streaming sporadically from the Vercors natural park on this website.</p>
+      <p class="links"><a href="feed.xml">Podcast feed (RSS)</a></p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <nav class="filters" aria-label="Filter sets by type">
+      <button type="button" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" data-filter="lets-go" aria-pressed="false">Let's go</button>
+      <button type="button" data-filter="focus" aria-pressed="false">Focus</button>
+      <button type="button" data-filter="experimentation" aria-pressed="false">Experimentation</button>
+    </nav>
+    <ol id="sets" class="sets" aria-live="polite"></ol>
+    <p id="status" class="status">Loading sets…</p>
+  </main>
+
+  <footer class="player" id="player" hidden>
+    <div class="player-inner wrap">
+      <button type="button" class="ctl" id="back" aria-label="Back 15 seconds">−15</button>
+      <button type="button" class="ctl play" id="toggle" aria-label="Play">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5v14l11-7z"/><path class="i-pause" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+      </button>
+      <button type="button" class="ctl" id="fwd" aria-label="Forward 30 seconds">+30</button>
+      <div class="now">
+        <p class="now-title" id="now-title"></p>
+        <div class="seek">
+          <span id="cur">0:00</span>
+          <input type="range" id="seek" min="0" max="0" step="1" value="0" aria-label="Seek">
+          <span id="dur">–:––</span>
+        </div>
+      </div>
+    </div>
+    <audio id="audio" preload="none"></audio>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

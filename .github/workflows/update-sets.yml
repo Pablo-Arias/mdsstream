@@ -1,0 +1,39 @@
+name: Update sets
+
+on:
+  schedule:
+    - cron: "17 * * * *" # every hour
+  workflow_dispatch: # "Run workflow" button in the Actions tab
+  push:
+    paths: ["scripts/build-sets.mjs", ".github/workflows/update-sets.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-sets
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Read the cloud folder
+        run: node scripts/build-sets.mjs
+        env:
+          SHARE_URL: https://cloud.univ-grenoble-alpes.fr/s/6j9ZEg7zqb85SLi
+      - name: Commit if the sets changed
+        run: |
+          git add sets.json feed.xml
+          if git diff --cached --quiet; then
+            echo "No new sets."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Update sets"
+            git push
+          fi
