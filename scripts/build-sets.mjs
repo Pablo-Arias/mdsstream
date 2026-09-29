@@ -4,10 +4,13 @@
 // Needs Node 20+ (built-in fetch). No dependencies.
 
 import { writeFile, readFile } from "node:fs/promises";
+import { mp3Duration } from "./mp3-duration.mjs";
 
 const SHARE_URL = process.env.SHARE_URL || "https://cloud.univ-grenoble-alpes.fr/s/6j9ZEg7zqb85SLi";
 const SITE_URL = (process.env.SITE_URL || siteUrlFromRepo() || "https://pablo-arias.github.io/mdsstream").replace(/\/$/, "");
 const AUDIO_EXT = /\.(mp3|m4a|aac|ogg|opus|wav|flac)$/i;
+const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
+const NOTES_EXT = /\.(txt|md)$/i;
 
 const { origin, pathname } = new URL(SHARE_URL);
 const token = pathname.split("/").filter(Boolean).pop();
@@ -73,7 +76,7 @@ async function listFiles() {
         modified: Date.parse(tag(block, "getlastmodified") || "") / 1000 || 0,
       };
     })
-    .filter((f) => AUDIO_EXT.test(f.fileName));
+    .filter((f) => f.fileName !== token); // the folder itself
 }
 
 // --- File name convention ---------------------------------------------------
@@ -110,17 +113,20 @@ export function parseName(fileName) {
 const escapeXml = (s) =>
   String(s).replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]);
 
-function buildFeed(sets) {
+function buildFeed(sets, defaultCover) {
   const items = sets
     .map((s) => {
-      const desc = [s.genre, s.objectiveLabel, s.bpm && `${s.bpm} BPM`, s.category].filter(Boolean).join(" · ");
+      const meta = [s.genre, s.objectiveLabel, s.bpm && `${s.bpm} BPM`, s.category].filter(Boolean).join(" · ");
+      const desc = [meta, s.notes].filter(Boolean).join("\n\n");
       return `    <item>
       <title>${escapeXml(s.title)}</title>
       <description>${escapeXml(desc || s.title)}</description>
       <guid isPermaLink="false">${escapeXml(s.id)}</guid>
       <pubDate>${new Date(s.date).toUTCString()}</pubDate>
       <enclosure url="${escapeXml(s.url)}" length="${s.size}" type="${escapeXml(s.type || "audio/mpeg")}"/>
-      <link>${SITE_URL}/#${encodeURIComponent(s.id)}</link>
+      <link>${SITE_URL}/#${encodeURIComponent(s.id)}</link>${
+        s.duration ? `\n      <itunes:duration>${Math.round(s.duration)}</itunes:duration>` : ""
+      }${s.cover ? `\n      <itunes:image href="${escapeXml(s.cover.url)}"/>` : ""}
     </item>`;
     })
     .join("\n");
@@ -132,7 +138,7 @@ function buildFeed(sets) {
     <description>MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ, for free.</description>
     <language>en</language>
     <itunes:author>MDS</itunes:author>
-    <itunes:image href="${SITE_URL}/icon.svg"/>
+    <itunes:image href="${escapeXml(defaultCover?.url || `${SITE_URL}/icon-512.png`)}"/>
     <itunes:category text="Music"/>
     <itunes:explicit>false</itunes:explicit>
 ${items}
@@ -148,23 +154,69 @@ async function writeIfChanged(path, content) {
   return true;
 }
 
+// --- Sidecar files ------------------------------------------------------------
+// Next to "Some set.mp3" in the folder:  "Some set.txt" (notes) and "Some set.jpg" (cover).
+// "cover.jpg" on its own is the default cover for every set without one.
+
+const stem = (name) => name.replace(/\.[^.]+$/, "").trim().toLowerCase();
+const fileUrl = (name) => `${davBase}/${encodeURIComponent(name)}`;
+
+// Nextcloud makes resized previews; use one for the list when it's available.
+async function coverFor(file) {
+  const url = fileUrl(file.fileName);
+  const thumb = `${origin}/index.php/apps/files_sharing/publicpreview/${token}?file=${encodeURIComponent(`/${file.fileName}`)}&x=512&y=512&a=1`;
+  const res = await fetch(thumb, { method: "HEAD" }).catch(() => null);
+  return { url, thumb: res?.ok && res.headers.get("content-type")?.startsWith("image/") ? thumb : url };
+}
+
+async function notesFor(file) {
+  const res = await fetch(fileUrl(file.fileName));
+  if (!res.ok) return undefined;
+  return (await res.text()).replace(/\r\n?/g, "\n").trim().slice(0, 20000) || undefined;
+}
+
+// Durations are read once and remembered (keyed by file id + size).
+const previous = new Map(
+  (JSON.parse(await readFile("sets.json", "utf8").catch(() => "{}")).sets || []).map((s) => [s.id, s]),
+);
+async function durationFor(id, file, url) {
+  const prev = previous.get(id);
+  if (prev?.duration && prev.size === file.size) return prev.duration;
+  if (!/\.mp3$/i.test(file.fileName)) return undefined;
+  const d = await mp3Duration(url, file.size).catch(() => null);
+  return d ? Math.round(d * 10) / 10 : undefined;
+}
+
 const files = await listFiles();
-const sets = files
-  .map((f) => {
-    const seconds = f.created || f.uploaded || f.modified;
-    return {
-      id: f.fileId || f.fileName,
-      fileName: f.fileName,
-      url: `${davBase}/${encodeURIComponent(f.fileName)}`,
-      date: new Date(seconds * 1000).toISOString(),
-      size: f.size,
-      type: f.type,
-      ...parseName(f.fileName),
-    };
-  })
-  .sort((a, b) => b.date.localeCompare(a.date));
+const byStem = (re) => new Map(files.filter((f) => re.test(f.fileName)).map((f) => [stem(f.fileName), f]));
+const images = byStem(IMAGE_EXT);
+const notes = byStem(NOTES_EXT);
+const defaultCoverFile = images.get("cover");
+const defaultCover = defaultCoverFile && (await coverFor(defaultCoverFile));
+
+const sets = [];
+for (const f of files.filter((f) => AUDIO_EXT.test(f.fileName))) {
+  const id = f.fileId || f.fileName;
+  const url = fileUrl(f.fileName);
+  const seconds = f.created || f.uploaded || f.modified;
+  const coverFile = images.get(stem(f.fileName));
+  const notesFile = notes.get(stem(f.fileName));
+  sets.push({
+    id,
+    fileName: f.fileName,
+    url,
+    date: new Date(seconds * 1000).toISOString(),
+    size: f.size,
+    type: f.type,
+    duration: await durationFor(id, f, url),
+    ...parseName(f.fileName),
+    cover: coverFile ? await coverFor(coverFile) : defaultCover,
+    notes: notesFile ? await notesFor(notesFile) : undefined,
+  });
+}
+sets.sort((a, b) => b.date.localeCompare(a.date));
 
 // No timestamp in the JSON, so the file (and the git history) only changes when the sets change.
 const changedJson = await writeIfChanged("sets.json", JSON.stringify({ sets }, null, 2) + "\n");
-const changedFeed = await writeIfChanged("feed.xml", buildFeed(sets));
+const changedFeed = await writeIfChanged("feed.xml", buildFeed(sets, defaultCover));
 console.log(`${sets.length} sets · sets.json ${changedJson ? "updated" : "unchanged"} · feed.xml ${changedFeed ? "updated" : "unchanged"}`);

@@ -24,6 +24,10 @@ function recordPosition(done = false) {
 let sets = [];
 let current = null;
 let filter = "all";
+const openNotes = new Set(); // survives re-renders
+
+const ICON_SHARE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
+const setLink = (set) => `${location.origin}${location.pathname}#${set.id}`;
 
 const fmtTime = (s) => {
   if (!isFinite(s)) return "–:––";
@@ -55,8 +59,9 @@ function render() {
       const stateLabel = { new: "New", played: "Played ✓", started: `Resume at ${fmtTime(p?.t)}` }[state];
       return el("li", { class: `set is-${state}${isCurrent ? " is-current" : ""}`, id: `set-${s.id}` },
         el("button", {
-          class: "set-play", type: "button", "data-id": s.id,
+          class: `set-play${s.cover ? " has-cover" : ""}`, type: "button", "data-id": s.id,
           "aria-label": `${playing ? "Pause" : "Play"} ${s.title}`,
+          ...(s.cover && { style: `background-image:url("${encodeURI(s.cover.thumb)}")` }),
           html: playing ? ICON_PAUSE : ICON_PLAY,
         }),
         el("div", {},
@@ -67,10 +72,16 @@ function render() {
             s.genre && el("span", {}, s.genre),
             s.bpm && el("span", {}, `${s.bpm} BPM`),
             s.category && el("span", {}, s.category),
+            s.duration && el("span", {}, fmtTime(s.duration)),
             el("span", {}, fmtDate(s.date)),
           ),
           state === "started" && el("div", { class: "set-progress", style: `--p:${(p.t / p.d) * 100}%` }),
+          s.notes && el("details", { class: "set-notes", "data-id": s.id, ...(openNotes.has(s.id) && { open: "" }) },
+            el("summary", {}, "Notes"),
+            el("p", {}, s.notes),
+          ),
         ),
+        el("button", { class: "set-share", type: "button", "data-id": s.id, "aria-label": `Share ${s.title}`, html: ICON_SHARE }),
       );
     }),
   );
@@ -84,7 +95,7 @@ const loaded = () => audio.readyState >= 1;
 const position = () => (loaded() ? audio.currentTime : startAt);
 function setPosition(t) {
   if (loaded()) audio.currentTime = t;
-  else { startAt = t; showPosition(t, progress[current.id]?.d); }
+  else { startAt = t; showPosition(t, progress[current.id]?.d || current.duration); }
 }
 function showPosition(t, d) {
   if (d) { seek.max = Math.floor(d); $("dur").textContent = fmtTime(d); }
@@ -100,8 +111,9 @@ function load(set) {
   audio.src = set.url;
   const p = progress[set.id];
   startAt = p && !p.done && p.t > 5 ? p.t : 0;
-  showPosition(startAt, p?.d);
-  if (!p?.d) $("dur").textContent = fmtTime(NaN);
+  const d = p?.d || set.duration;
+  showPosition(startAt, d);
+  if (!d) $("dur").textContent = fmtTime(NaN);
   player.hidden = false;
   $("now-title").textContent = set.title;
   history.replaceState(null, "", `#${set.id}`);
@@ -111,7 +123,9 @@ function load(set) {
       title: set.title,
       artist: "MDS",
       album: [set.genre, set.objectiveLabel].filter(Boolean).join(" · ") || "Vercors Stream",
-      artwork: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml" }],
+      artwork: set.cover
+        ? [{ src: set.cover.url }]
+        : [{ src: "icon-512.png", sizes: "512x512", type: "image/png" }],
     });
   }
 }
@@ -126,11 +140,44 @@ function play(set) {
   render();
 }
 
+// Next/previous in the list as it's currently shown (newest first, filter applied).
+function neighbour(step) {
+  const shown = sets.filter((s) => filter === "all" || s.objective === filter);
+  const i = shown.findIndex((s) => s.id === current?.id);
+  return i === -1 ? null : shown[i + step] || null;
+}
+
+let toastTimer;
+function toast(text) {
+  const t = $("toast");
+  t.textContent = text;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.hidden = true), 2200);
+}
+
+// Phones open their share sheet; elsewhere the link is copied.
+async function share(set) {
+  const url = setLink(set);
+  if (navigator.share) {
+    try { await navigator.share({ title: `${set.title} · MDS`, text: `${set.title} · MDS`, url }); } catch {}
+    return;
+  }
+  try { await navigator.clipboard.writeText(url); toast("Link copied"); }
+  catch { prompt("Copy this link:", url); }
+}
+
 // Events
 list.addEventListener("click", (e) => {
-  const btn = e.target.closest(".set-play");
-  if (btn) play(sets.find((s) => s.id === btn.dataset.id));
+  const playBtn = e.target.closest(".set-play");
+  if (playBtn) play(sets.find((s) => s.id === playBtn.dataset.id));
+  const shareBtn = e.target.closest(".set-share");
+  if (shareBtn) share(sets.find((s) => s.id === shareBtn.dataset.id));
 });
+list.addEventListener("toggle", (e) => {
+  if (!e.target.matches?.(".set-notes")) return;
+  e.target.open ? openNotes.add(e.target.dataset.id) : openNotes.delete(e.target.dataset.id);
+}, true);
 
 document.querySelector(".filters").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-filter]");
@@ -162,7 +209,11 @@ audio.addEventListener("timeupdate", () => {
   $("cur").textContent = fmtTime(audio.currentTime);
 });
 audio.addEventListener("pause", () => recordPosition());
-audio.addEventListener("ended", () => recordPosition(true));
+audio.addEventListener("ended", () => {
+  recordPosition(true);
+  const next = neighbour(1); // autoplay the next set down the list
+  if (next) play(next);
+});
 addEventListener("pagehide", () => recordPosition());
 for (const ev of ["play", "pause", "ended"]) {
   audio.addEventListener(ev, () => {
@@ -179,6 +230,8 @@ if ("mediaSession" in navigator) {
   ms.setActionHandler("seekbackward", () => $("back").click());
   ms.setActionHandler("seekforward", () => $("fwd").click());
   ms.setActionHandler("seekto", (d) => setPosition(d.seekTime));
+  ms.setActionHandler("nexttrack", () => { const n = neighbour(1); if (n) play(n); });
+  ms.setActionHandler("previoustrack", () => { const n = neighbour(-1); if (n) play(n); });
 }
 
 // Space = play/pause (starts the first listed set if nothing is loaded yet).

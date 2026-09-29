@@ -104,7 +104,7 @@ h1 { margin: 10px 0 8px; font-size: clamp(56px, 14vw, 104px); line-height: .9; l
 /* Set list */
 .sets { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .set {
-  display: grid; grid-template-columns: 48px 1fr; gap: 14px; align-items: center;
+  display: grid; grid-template-columns: 48px 1fr auto; gap: 14px; align-items: center;
   padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
   scroll-margin-top: 16px;
 }
@@ -163,3 +163,26 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .set.is-played:not(.is-current) .set-title { color: var(--muted); }
 .set-progress { margin-top: 10px; height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .set-progress::before { content: ""; display: block; height: 100%; width: var(--p); background: var(--accent); }
+
+/* Covers, share, notes */
+.set-play.has-cover {
+  border-radius: 10px; background-size: cover; background-position: center;
+  color: #fff; box-shadow: inset 0 0 0 100px rgb(0 0 0 / .28);
+}
+.set.is-current .set-play.has-cover { color: #fff; box-shadow: inset 0 0 0 100px rgb(0 0 0 / .45), 0 0 0 2px var(--accent); }
+.set-play.has-cover svg { filter: drop-shadow(0 1px 2px rgb(0 0 0 / .5)); }
+.set-share {
+  align-self: start; width: 36px; height: 36px; margin: -6px -6px 0 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--muted);
+  display: grid; place-items: center;
+}
+.set-share:hover { color: var(--text); background: var(--surface-2); }
+.set-share svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.set-notes { margin-top: 8px; font-size: 14px; }
+.set-notes summary { cursor: pointer; width: fit-content; font: 500 12px var(--mono); color: var(--muted); letter-spacing: .04em; }
+.set-notes p { margin: 6px 0 0; white-space: pre-line; overflow-wrap: anywhere; color: var(--text); line-height: 1.55; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 20;
+  margin: 0; padding: 8px 16px; border-radius: 999px; background: var(--text); color: var(--bg); font-size: 14px;
+}
+.toast[hidden] { display: none; }

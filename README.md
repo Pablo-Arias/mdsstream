@@ -27,6 +27,19 @@ MDS_Ambient techno_Focus_120_Atmospheric and polyrhythmic snippet.mp3
 - If the name contains `_`, only `_` separates fields, so ` - ` can be used inside one (`Dub - Dub techno`). Otherwise ` - ` separates them.
 - Files that don't follow the pattern still appear, with the file name as the title.
 
+### Notes and covers (optional)
+
+Put them next to the MP3 in the cloud folder, with **exactly the same name**:
+
+```
+MDS_Dub techno_Focus_90_First dub session.mp3
+MDS_Dub techno_Focus_90_First dub session.txt   ← notes, shown under the set
+MDS_Dub techno_Focus_90_First dub session.jpg   ← cover (.jpg, .png or .webp)
+cover.jpg                                        ← default cover for sets without one
+```
+
+Covers also show on the phone's lock screen and in podcast apps (square, 1400×1400 or more is ideal for those).
+
 ## Setup (once)
 
 1. Push this repo to GitHub.
