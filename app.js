@@ -344,21 +344,36 @@ audio.addEventListener("loadedmetadata", () => {
 let wantPlaying = false;
 let recovering = false;
 let stallTimer;
-function recover() {
-  if (!current || recovering) return;
+let attempts = 0;
+async function recover() {
+  if (!current || recovering || attempts >= 3) return;
   recovering = true;
+  attempts++;
   startAt = audio.currentTime || startAt;
+  await refreshSets(); // the file may have been renamed since this page loaded
   audio.src = current.url;
   audio.play().catch(() => {}).finally(() => (recovering = false));
 }
+
+// Reload the list; keep the current set (matched by id) pointing at its latest file.
+async function refreshSets() {
+  try {
+    const data = await (await fetch("sets.json", { cache: "no-cache" })).json();
+    if (!data.sets?.length) return;
+    sets = data.sets;
+    const fresh = current && sets.find((s) => s.id === current.id);
+    if (fresh) { current = fresh; $("now-title").textContent = fresh.title; }
+    render();
+  } catch {}
+}
 audio.addEventListener("play", () => (wantPlaying = true));
 audio.addEventListener("pause", () => { if (!recovering) wantPlaying = false; });
-audio.addEventListener("error", () => { if (wantPlaying && !audio.paused) setTimeout(recover, 1000); });
+audio.addEventListener("error", () => { if (wantPlaying) setTimeout(recover, 1000); });
 audio.addEventListener("waiting", () => {
   clearTimeout(stallTimer);
   stallTimer = setTimeout(() => { if (wantPlaying && audio.readyState < 3) recover(); }, 8000);
 });
-audio.addEventListener("playing", () => clearTimeout(stallTimer));
+audio.addEventListener("playing", () => { clearTimeout(stallTimer); attempts = 0; });
 
 let lastSave = 0;
 audio.addEventListener("seeking", () => (lastTick = null));
