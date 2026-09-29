@@ -77,7 +77,7 @@ async function listFiles() {
 }
 
 // --- File name convention ---------------------------------------------------
-// Author - Genre - Objective - BPM - Description   (" - " or "_" as separator)
+// Author _ Genre _ Objective _ BPM _ Description   ("_" as separator, or " - " when there's no "_")
 // Anything that doesn't match still shows up, with the file name as its title.
 
 const OBJECTIVES = [
@@ -88,7 +88,8 @@ const OBJECTIVES = [
 
 export function parseName(fileName) {
   const base = fileName.replace(AUDIO_EXT, "").trim();
-  const parts = base.split(/\s*_\s*|\s+-\s+/).map((p) => p.trim()).filter(Boolean);
+  // With "_" in the name, " - " is free to appear inside a field (e.g. "Dub - Dub techno").
+  const parts = base.split(base.includes("_") ? /_/ : /\s+-\s+/).map((p) => p.trim()).filter(Boolean);
   if (parts.length < 5) return { title: base };
 
   const [author, genre, objectiveRaw, fourth, ...rest] = parts;
@@ -126,11 +127,11 @@ function buildFeed(sets) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
   <channel>
-    <title>MDFS · Vercors Stream</title>
+    <title>MDS · Vercors Stream</title>
     <link>${SITE_URL}/</link>
-    <description>MDFS streaming sporadically from the Vercors natural park.</description>
+    <description>MDS streaming sporadically from the Vercors natural park.</description>
     <language>en</language>
-    <itunes:author>MDFS</itunes:author>
+    <itunes:author>MDS</itunes:author>
     <itunes:image href="${SITE_URL}/icon.svg"/>
     <itunes:category text="Music"/>
     <itunes:explicit>false</itunes:explicit>

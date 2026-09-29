@@ -5,6 +5,21 @@ const seek = $("seek");
 const ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
 
+// What this device has played: { [setId]: { t: seconds, d: duration, done: bool } }.
+// Stored in the browser only — no account, nothing leaves the phone.
+const STORE_KEY = "mdfs.progress";
+let progress = {};
+try { progress = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch {}
+const saveProgress = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch {} };
+
+function recordPosition(done = false) {
+  if (!current || !isFinite(audio.duration)) return;
+  const prev = progress[current.id] || {};
+  const t = audio.currentTime, d = audio.duration;
+  progress[current.id] = { t, d, done: prev.done || done || t / d > 0.95 };
+  saveProgress();
+}
+
 let sets = [];
 let current = null;
 let filter = "all";
@@ -34,7 +49,10 @@ function render() {
     ...shown.map((s) => {
       const isCurrent = current && current.id === s.id;
       const playing = isCurrent && !audio.paused;
-      return el("li", { class: `set${isCurrent ? " is-current" : ""}`, id: `set-${s.id}` },
+      const p = progress[s.id];
+      const state = !p ? "new" : p.done ? "played" : "started";
+      const stateLabel = { new: "New", played: "Played ✓", started: `Resume at ${fmtTime(p?.t)}` }[state];
+      return el("li", { class: `set is-${state}${isCurrent ? " is-current" : ""}`, id: `set-${s.id}` },
         el("button", {
           class: "set-play", type: "button", "data-id": s.id,
           "aria-label": `${playing ? "Pause" : "Play"} ${s.title}`,
@@ -42,6 +60,7 @@ function render() {
         }),
         el("div", {},
           el("p", { class: "set-title" }, s.title),
+          el("p", { class: "set-state" }, stateLabel),
           el("p", { class: "set-meta" },
             s.objectiveLabel && el("span", { class: `badge ${s.objective}` }, s.objectiveLabel),
             s.genre && el("span", {}, s.genre),
@@ -49,6 +68,7 @@ function render() {
             s.category && el("span", {}, s.category),
             el("span", {}, fmtDate(s.date)),
           ),
+          state === "started" && el("div", { class: "set-progress", style: `--p:${(p.t / p.d) * 100}%` }),
         ),
       );
     }),
@@ -56,13 +76,23 @@ function render() {
   statusEl.textContent = sets.length && !shown.length ? "No sets of this type yet." : "";
 }
 
+// Start where this device left off (unless the set was finished — then from the top).
+function resumeIfStarted(set) {
+  const p = progress[set.id];
+  if (p && !p.done && p.t > 5) {
+    audio.addEventListener("loadedmetadata", () => (audio.currentTime = p.t), { once: true });
+  }
+}
+
 function play(set) {
   if (current && current.id === set.id) {
     audio.paused ? audio.play() : audio.pause();
     return;
   }
+  recordPosition();
   current = set;
   audio.src = set.url;
+  resumeIfStarted(set);
   audio.play().catch(() => {});
   player.hidden = false;
   $("now-title").textContent = set.title;
@@ -70,7 +100,7 @@ function play(set) {
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: set.title,
-      artist: "MDFS",
+      artist: "MDS",
       album: [set.genre, set.objectiveLabel].filter(Boolean).join(" · ") || "Vercors Stream",
       artwork: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml" }],
     });
@@ -104,11 +134,16 @@ audio.addEventListener("loadedmetadata", () => {
   seek.max = Math.floor(audio.duration) || 0;
   $("dur").textContent = fmtTime(audio.duration);
 });
+let lastSave = 0;
 audio.addEventListener("timeupdate", () => {
+  if (Date.now() - lastSave > 5000) { lastSave = Date.now(); recordPosition(); }
   if (seeking) return;
   seek.value = Math.floor(audio.currentTime);
   $("cur").textContent = fmtTime(audio.currentTime);
 });
+audio.addEventListener("pause", () => recordPosition());
+audio.addEventListener("ended", () => recordPosition(true));
+addEventListener("pagehide", () => recordPosition());
 for (const ev of ["play", "pause", "ended"]) {
   audio.addEventListener(ev, () => {
     player.classList.toggle("playing", !audio.paused);
@@ -126,6 +161,58 @@ if ("mediaSession" in navigator) {
   ms.setActionHandler("seekto", (d) => (audio.currentTime = d.seekTime));
 }
 
+// Space = play/pause (starts the first listed set if nothing is loaded yet).
+// A focused button already reacts to Space by itself, so leave those alone.
+addEventListener("keydown", (e) => {
+  if (e.code !== "Space" || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest("button, a, textarea, select, [contenteditable], input:not([type=range])") || $("install-help").open) return;
+  e.preventDefault();
+  if (current) audio.paused ? audio.play() : audio.pause();
+  else list.querySelector(".set-play")?.click();
+});
+
+// Add to Home Screen. Android/Chrome gives us a real install prompt; iPhone needs
+// the Share menu, so there we show the steps instead.
+const installBtn = $("install"), installHelp = $("install-help");
+const ua = navigator.userAgent;
+const isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+const isAndroid = /Android/.test(ua);
+const isInstalled = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+let installPrompt = null;
+
+if (!isInstalled && (isIOS || isAndroid)) installBtn.hidden = false;
+addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  if (!isInstalled) installBtn.hidden = false;
+});
+addEventListener("appinstalled", () => (installBtn.hidden = true));
+
+const SHARE_GLYPH = '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
+installBtn.addEventListener("click", async () => {
+  if (installPrompt) {
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    installPrompt = null;
+    if (outcome === "accepted") installBtn.hidden = true;
+    return;
+  }
+  const steps = isIOS
+    ? [
+        `Tap the Share button ${SHARE_GLYPH} (bottom bar in Safari, top right in Chrome).`,
+        "Scroll down and tap <b>Add to Home Screen</b>.",
+        "Tap <b>Add</b>. MDS now opens like an app.",
+        "Opened this from Instagram or another app? Open it in Safari first.",
+      ]
+    : [
+        "Open your browser menu <b>⋮</b> (top right).",
+        "Tap <b>Add to Home screen</b> or <b>Install app</b>.",
+        "Confirm. MDS now opens like an app.",
+      ];
+  $("install-steps").innerHTML = steps.map((t) => `<li>${t}</li>`).join("");
+  installHelp.showModal();
+});
+
 // Load
 fetch("sets.json", { cache: "no-cache" })
   .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -139,6 +226,7 @@ fetch("sets.json", { cache: "no-cache" })
       current = linked;
       $("now-title").textContent = linked.title;
       audio.src = linked.url;
+      resumeIfStarted(linked);
       player.hidden = false;
       render();
       $(`set-${linked.id}`)?.scrollIntoView({ block: "center" });

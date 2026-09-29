@@ -3,11 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>MDFS · Vercors Stream</title>
-  <meta name="description" content="MDFS streaming sporadically from the Vercors natural park on this website.">
+  <title>MDS · Vercors Stream</title>
+  <meta name="description" content="MDS streaming sporadically from the Vercors natural park on this website.">
   <meta name="theme-color" content="#0f1512">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="alternate" type="application/rss+xml" title="MDFS · Vercors Stream" href="feed.xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="MDS">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="alternate" type="application/rss+xml" title="MDS · Vercors Stream" href="feed.xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -20,11 +26,24 @@
     </svg>
     <div class="wrap">
       <p class="eyebrow">Vercors Stream</p>
-      <h1>MDFS</h1>
-      <p class="tagline">MDFS streaming sporadically from the Vercors natural park on this website.</p>
-      <p class="links"><a href="feed.xml">Podcast feed (RSS)</a></p>
+      <h1>MDS</h1>
+      <p class="tagline">MDS streaming sporadically from the Vercors natural park on this website.</p>
+      <p class="pitch">Streaming analog and improvised music in HQ, for free.</p>
+      <p class="links">
+        <button type="button" class="install" id="install" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
+          Add to Home Screen
+        </button>
+        <a href="feed.xml">Podcast feed (RSS)</a>
+      </p>
     </div>
   </header>
+
+  <dialog class="sheet" id="install-help" aria-labelledby="install-title">
+    <h2 id="install-title">Add MDS to your Home Screen</h2>
+    <ol id="install-steps"></ol>
+    <form method="dialog"><button class="sheet-close">Got it</button></form>
+  </dialog>
 
   <main class="wrap">
     <nav class="filters" aria-label="Filter sets by type">

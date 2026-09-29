@@ -1,0 +1,14 @@
+{
+  "name": "MDS · Vercors Stream",
+  "short_name": "MDS",
+  "description": "Streaming analog and improvised music in HQ, for free.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1512",
+  "theme_color": "#0f1512",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

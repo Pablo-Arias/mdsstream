@@ -1,6 +1,6 @@
 # Vercors Stream
 
-MDFS streaming sporadically from the Vercors natural park on this website.
+MDS streaming sporadically from the Vercors natural park on this website.
 
 A static site on GitHub Pages. The audio lives in a public Nextcloud folder. An hourly GitHub Action lists that folder and writes `sets.json` (for the site) and `feed.xml` (a podcast feed).
 
@@ -18,13 +18,13 @@ Author_Genre_Objective_BPM_Description.mp3
 Examples:
 
 ```
-MDFS - Modular techno - Let's go - 135 - Modular exploration after 909 integration.mp3
-MDFS_Ambient techno_Focus_120_Atmospheric and polyrhythmic snippet.mp3
+MDS - Modular techno - Let's go - 135 - Modular exploration after 909 integration.mp3
+MDS_Ambient techno_Focus_120_Atmospheric and polyrhythmic snippet.mp3
 ```
 
 - **Objective** is one of `Let's go`, `Focus`, `Experimentation` (any case).
 - **BPM** is a number. If it isn't, it's shown as a free-text category instead.
-- Don't use `_` or ` - ` inside a field. A plain hyphen like `909-oriented` is fine.
+- If the name contains `_`, only `_` separates fields, so ` - ` can be used inside one (`Dub - Dub techno`). Otherwise ` - ` separates them.
 - Files that don't follow the pattern still appear, with the file name as the title.
 
 ## Setup (once)
