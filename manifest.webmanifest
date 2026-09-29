@@ -1,7 +1,7 @@
 {
   "name": "MDS · Vercors Stream",
   "short_name": "MDS",
-  "description": "MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ and for free.",
+  "description": "MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ, for free.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

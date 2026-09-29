@@ -129,7 +129,7 @@ function buildFeed(sets) {
   <channel>
     <title>MDS · Vercors Stream</title>
     <link>${SITE_URL}/</link>
-    <description>MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ and for free.</description>
+    <description>MDS streaming analog and electronic music sporadically from the Vercors natural park, in HQ, for free.</description>
     <language>en</language>
     <itunes:author>MDS</itunes:author>
     <itunes:image href="${SITE_URL}/icon.svg"/>
