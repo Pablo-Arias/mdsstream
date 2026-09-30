@@ -2,8 +2,8 @@
   "sets": [
     {
       "id": "1198935559",
-      "fileName": "MDS _ Dreamy Chill Jazzy Downtempo _ Experimentation - Focus _ 80 _ Wanted to do something chill at the begining and then something happened.mp3",
-      "url": "https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Dreamy%20Chill%20Jazzy%20Downtempo%20_%20Experimentation%20-%20Focus%20_%2080%20_%20Wanted%20to%20do%20something%20chill%20at%20the%20begining%20and%20then%20something%20happened.mp3",
+      "fileName": "MDS _ Dreamy Chill Jazzy Downtempo _ Experimenting - Focus _ 75 _ Wanted to do something chill at the begining and then something happened.mp3",
+      "url": "https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Dreamy%20Chill%20Jazzy%20Downtempo%20_%20Experimenting%20-%20Focus%20_%2075%20_%20Wanted%20to%20do%20something%20chill%20at%20the%20begining%20and%20then%20something%20happened.mp3",
       "date": "2026-09-29T19:21:38.000Z",
       "size": 162083525,
       "type": "audio/mpeg",
@@ -17,15 +17,15 @@
       ],
       "objectives": [
         {
-          "id": "experimentation",
-          "label": "Experimentation"
+          "id": "experimenting",
+          "label": "Experimenting"
         },
         {
           "id": "focus",
           "label": "Focus"
         }
       ],
-      "bpm": 80
+      "bpm": 75
     },
     {
       "id": "1198333360",
