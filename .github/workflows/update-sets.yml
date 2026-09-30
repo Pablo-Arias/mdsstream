@@ -22,9 +22,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Read the cloud folder
+      - name: Read the list of sets
         run: node scripts/build-sets.mjs
         env:
+          # Files live in Cloudflare R2, listed by the Worker. Remove this line to go back to Nextcloud.
+          LIBRARY_URL: https://mdsstream-api.mdsstream.workers.dev
           SHARE_URL: https://cloud.univ-grenoble-alpes.fr/s/6j9ZEg7zqb85SLi
       - name: Commit if the sets changed
         run: |

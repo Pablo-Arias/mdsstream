@@ -4,7 +4,9 @@
 //   POST /listen           { setId, device }          count a listen (once per device per day)
 //   POST /rate             { setId, device, stars }   rate 1–5 (one rating per device)
 //   POST /moment           { setId, device, t, on }   mark/unmark a good part at t seconds (30 s windows)
-//   GET  /audio/<setId>    the set's MP3, relayed with CORS so the site can save it offline
+//   GET  /audio/<setId>    the set's MP3 (from R2; falls back to relaying Nextcloud), with seeking
+//   GET  /file/<name>      any file in the R2 bucket (covers, notes), with seeking
+//   GET  /library          what's in the R2 bucket, with stable ids and dates (used by the site build)
 //   POST /subscribe        { endpoint }               notify this phone of new sets
 //   POST /unsubscribe      { endpoint }
 //
@@ -29,12 +31,25 @@ export default {
     try {
       const { pathname, searchParams } = new URL(request.url);
 
-      // Relay a set's audio (only files listed in sets.json, so this is not an open proxy).
-      if (request.method === "GET" && pathname.startsWith("/audio/")) {
+      if ((request.method === "GET" || request.method === "HEAD") && pathname.startsWith("/file/")) {
+        const key = decodeURIComponent(pathname.slice("/file/".length));
+        return (await serveObject(env, key, request, cors)) || json({ error: "Not found" }, 404);
+      }
+
+      if (request.method === "GET" && pathname === "/library") {
+        return json({ files: await library(env) });
+      }
+
+      // A set's audio: from R2 if it's there, else relayed from Nextcloud (only files listed in
+      // sets.json, so this is not an open proxy).
+      if ((request.method === "GET" || request.method === "HEAD") && pathname.startsWith("/audio/")) {
         const id = decodeURIComponent(pathname.slice("/audio/".length));
+        const row = env.AUDIO && (await env.DB.prepare("SELECT key FROM files WHERE id = ?").bind(id).first());
+        const fromR2 = row && (await serveObject(env, row.key, request, cors));
+        if (fromR2) return fromR2;
         const relay = async () => {
           const set = (await knownSets(env)).get(id);
-          if (!set) return null;
+          if (!set || new URL(set.url).origin === new URL(request.url).origin) return null;
           const range = request.headers.get("Range");
           return fetch(set.url, { headers: range ? { Range: range } : {} });
         };
@@ -156,6 +171,92 @@ async function knownSets(env) {
     setCache = { at: Date.now(), sets: new Map((await fetchSets(env)).map((s) => [s.id, { duration: s.duration || 0, url: s.url }])) };
   }
   return setCache.sets;
+}
+
+// --- R2 bucket ------------------------------------------------------------------
+
+const TYPES = { mp3: "audio/mpeg", m4a: "audio/mp4", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", txt: "text/plain; charset=utf-8", md: "text/plain; charset=utf-8" };
+const typeOf = (key, meta) => meta?.contentType || TYPES[key.split(".").pop().toLowerCase()] || "application/octet-stream";
+
+// "bytes=a-b" | "bytes=a-" | "bytes=-n" → { start, end } (inclusive) for a file of `size` bytes.
+function parseRange(header, size) {
+  const m = /^bytes=(\d*)-(\d*)$/.exec(header || "");
+  if (!m || (m[1] === "" && m[2] === "")) return null;
+  if (m[1] === "") return { start: Math.max(0, size - Number(m[2])), end: size - 1 };
+  const start = Number(m[1]);
+  const end = m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1);
+  return start <= end ? { start, end } : "invalid";
+}
+
+// Serve an R2 object, honouring Range requests (needed for seeking and podcast apps).
+async function serveObject(env, key, request, cors) {
+  if (!env.AUDIO) return null;
+  const head = await env.AUDIO.head(key);
+  if (!head) return null;
+  const range = parseRange(request.headers.get("Range"), head.size);
+  if (range === "invalid") {
+    return new Response(null, { status: 416, headers: { ...cors, "Content-Range": `bytes */${head.size}` } });
+  }
+  const obj = request.method === "HEAD"
+    ? head
+    : await env.AUDIO.get(key, range ? { range: { offset: range.start, length: range.end - range.start + 1 } } : {});
+  if (!obj) return null;
+  const headers = new Headers(cors);
+  headers.set("Content-Type", typeOf(key, obj.httpMetadata));
+  headers.set("Accept-Ranges", "bytes");
+  headers.set("ETag", obj.httpEtag);
+  headers.set("Cache-Control", "public, max-age=3600");
+  if (request.method === "HEAD") {
+    headers.set("Content-Length", String(obj.size));
+    return new Response(null, { status: 200, headers });
+  }
+  if (range) {
+    headers.set("Content-Range", `bytes ${range.start}-${range.end}/${obj.size}`);
+    headers.set("Content-Length", String(range.end - range.start + 1));
+    return new Response(obj.body, { status: 206, headers });
+  }
+  headers.set("Content-Length", String(obj.size));
+  return new Response(obj.body, { status: 200, headers });
+}
+
+// Everything in the bucket, with an id and date that survive renames: the `files` table
+// remembers them by name, and a file seen under a new name with the same content (etag)
+// keeps its old id and date.
+async function library(env) {
+  if (!env.AUDIO) return [];
+  const objects = [];
+  let cursor;
+  do {
+    const page = await env.AUDIO.list({ cursor, include: ["httpMetadata"] });
+    objects.push(...page.objects);
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+
+  const known = (await env.DB.prepare("SELECT key, id, date, etag FROM files").all()).results;
+  const byKey = new Map(known.map((f) => [f.key, f]));
+  const byEtag = new Map(known.filter((f) => f.etag).map((f) => [f.etag, f]));
+  const present = new Set(objects.map((o) => o.key));
+  const usedIds = new Set();
+  const writes = [];
+  const files = [];
+
+  for (const o of objects) {
+    let f = byKey.get(o.key);
+    if (!f) {
+      const moved = byEtag.get(o.etag);
+      const renamed = moved && !present.has(moved.key);
+      f = { id: renamed ? moved.id : `r2-${o.etag.slice(0, 12)}`, date: renamed ? moved.date : o.uploaded.toISOString() };
+      if (usedIds.has(f.id)) f.id = `${f.id}-${files.length}`; // two identical files
+      if (renamed) writes.push(env.DB.prepare("DELETE FROM files WHERE key = ?").bind(moved.key));
+      writes.push(env.DB.prepare("INSERT OR REPLACE INTO files (key, id, date, etag) VALUES (?, ?, ?, ?)").bind(o.key, f.id, f.date, o.etag));
+    } else if (f.etag !== o.etag) {
+      writes.push(env.DB.prepare("UPDATE files SET etag = ? WHERE key = ?").bind(o.etag, o.key));
+    }
+    usedIds.add(f.id);
+    files.push({ key: o.key, id: f.id, date: f.date, size: o.size, type: typeOf(o.key, o.httpMetadata) });
+  }
+  if (writes.length) await env.DB.batch(writes);
+  return files;
 }
 
 async function stats(env, device) {

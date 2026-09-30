@@ -37,3 +37,11 @@ CREATE TABLE IF NOT EXISTS moments (
   created TEXT NOT NULL,
   PRIMARY KEY (set_id, device, bucket)
 );
+
+-- Files in the R2 bucket: stable id and original date per file name (kept across renames).
+CREATE TABLE IF NOT EXISTS files (
+  key  TEXT PRIMARY KEY,
+  id   TEXT NOT NULL,
+  date TEXT NOT NULL,
+  etag TEXT
+);

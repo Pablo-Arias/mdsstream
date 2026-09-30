@@ -22,7 +22,7 @@
       <description>Dreamy Chill Jazzy Downtempo · Experimentation · Focus · 75 BPM</description>
       <guid isPermaLink="false">1198935559</guid>
       <pubDate>Tue, 29 Sep 2026 19:21:38 GMT</pubDate>
-      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Dreamy%20Chill%20Jazzy%20Downtempo%20_%20Experimentation%20-%20Focus%20_%2075%20_%20Wanted%20to%20do%20something%20chill%20at%20the%20begining%20and%20then%20something%20happened.mp3" length="162083525" type="audio/mpeg"/>
+      <enclosure url="https://mdsstream-api.mdsstream.workers.dev/audio/1198935559" length="162083525" type="audio/mpeg"/>
       <link>https://pablo-arias.github.io/mdsstream/#1198935559</link>
       <itunes:duration>4052</itunes:duration>
     </item>
@@ -32,7 +32,7 @@
       <description>Modular techno · Let&apos;s go · 135 BPM</description>
       <guid isPermaLink="false">1198333360</guid>
       <pubDate>Mon, 28 Sep 2026 20:50:35 GMT</pubDate>
-      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Modular%20techno%20_%20Let%27s%20go%20_%20135%20_%20High%20energy%20modular%20testing%20the%20new%20909%20config.mp3" length="154868505" type="audio/mpeg"/>
+      <enclosure url="https://mdsstream-api.mdsstream.workers.dev/audio/1198333360" length="154868505" type="audio/mpeg"/>
       <link>https://pablo-arias.github.io/mdsstream/#1198333360</link>
       <itunes:duration>3872</itunes:duration>
     </item>
@@ -42,7 +42,7 @@
       <description>Dub · Dub techno · Focus · Experimentation · 90 BPM</description>
       <guid isPermaLink="false">1197317290</guid>
       <pubDate>Sun, 27 Sep 2026 21:14:27 GMT</pubDate>
-      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Dub%20-%20Dub%20techno%20_%20focus%20-%20Experimentation_%2090%20_%20First%20time%20improvising%20Dub%20and%20Dub%20techno%2C%20took%20some%20time%20to%20start%20and%20there%27s%20some%20feedback%20delays%20but%20interesting%20experience.mp3" length="136956864" type="audio/mpeg"/>
+      <enclosure url="https://mdsstream-api.mdsstream.workers.dev/audio/1197317290" length="136956864" type="audio/mpeg"/>
       <link>https://pablo-arias.github.io/mdsstream/#1197317290</link>
       <itunes:duration>3424</itunes:duration>
     </item>
@@ -52,7 +52,7 @@
       <description>Ambient techno · Focus · 120 BPM</description>
       <guid isPermaLink="false">1198364518</guid>
       <pubDate>Sat, 26 Sep 2026 23:38:44 GMT</pubDate>
-      <enclosure url="https://cloud.univ-grenoble-alpes.fr/public.php/dav/files/6j9ZEg7zqb85SLi/MDS%20_%20Ambient%20techno%20_%20Focus%20_%20120%20_%20Short%20atmospheric%20and%20polyrhythmic%20snippet.mp3" length="3579820" type="audio/mpeg"/>
+      <enclosure url="https://mdsstream-api.mdsstream.workers.dev/audio/1198364518" length="3579820" type="audio/mpeg"/>
       <link>https://pablo-arias.github.io/mdsstream/#1198364518</link>
       <itunes:duration>224</itunes:duration>
     </item>

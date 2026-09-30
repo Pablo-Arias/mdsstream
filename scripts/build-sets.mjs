@@ -7,6 +7,8 @@ import { writeFile, readFile } from "node:fs/promises";
 import { mp3Duration } from "./mp3-duration.mjs";
 
 const SHARE_URL = process.env.SHARE_URL || "https://cloud.univ-grenoble-alpes.fr/s/6j9ZEg7zqb85SLi";
+// When set, files come from the Cloudflare R2 bucket via the Worker instead of Nextcloud.
+const LIBRARY_URL = (process.env.LIBRARY_URL || "").replace(/\/$/, "");
 const SITE_URL = (process.env.SITE_URL || siteUrlFromRepo() || "https://pablo-arias.github.io/mdsstream").replace(/\/$/, "");
 const AUDIO_EXT = /\.(mp3|m4a|aac|ogg|opus|wav|flac)$/i;
 const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
@@ -174,11 +176,14 @@ async function writeIfChanged(path, content) {
 const stem = (name) => name.replace(/\.[^.]+$/, "").trim().toLowerCase();
 // Stricter than encodeURIComponent: some podcast apps reject raw ' ( ) ! * in links.
 const encodeStrict = (s) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
-const fileUrl = (name) => `${davBase}/${encodeStrict(name)}`;
+const fileUrl = (name) => (LIBRARY_URL ? `${LIBRARY_URL}/file/${encodeStrict(name)}` : `${davBase}/${encodeStrict(name)}`);
+// R2: audio is addressed by the set's id, so renaming a file never breaks a link.
+const audioUrl = (f) => (LIBRARY_URL ? `${LIBRARY_URL}/audio/${encodeStrict(f.fileId)}` : fileUrl(f.fileName));
 
 // Nextcloud makes resized previews; use one for the list when it's available.
 async function coverFor(file) {
   const url = fileUrl(file.fileName);
+  if (LIBRARY_URL) return { url, thumb: url };
   const thumb = `${origin}/index.php/apps/files_sharing/publicpreview/${token}?file=${encodeURIComponent(`/${file.fileName}`)}&x=512&y=512&a=1`;
   const res = await fetch(thumb, { method: "HEAD" }).catch(() => null);
   return { url, thumb: res?.ok && res.headers.get("content-type")?.startsWith("image/") ? thumb : url };
@@ -202,7 +207,13 @@ async function durationFor(id, file, url) {
   return d ? Math.round(d * 10) / 10 : undefined;
 }
 
-const files = await listFiles();
+async function listLibrary() {
+  const res = await fetch(`${LIBRARY_URL}/library`);
+  if (!res.ok) throw new Error(`Library returned ${res.status}`);
+  return (await res.json()).files.map((f) => ({ fileName: f.key, fileId: f.id, date: f.date, size: f.size, type: f.type }));
+}
+
+const files = LIBRARY_URL ? await listLibrary() : await listFiles();
 const byStem = (re) => new Map(files.filter((f) => re.test(f.fileName)).map((f) => [stem(f.fileName), f]));
 const images = byStem(IMAGE_EXT);
 const notes = byStem(NOTES_EXT);
@@ -212,7 +223,7 @@ const defaultCover = defaultCoverFile && (await coverFor(defaultCoverFile));
 const sets = [];
 for (const f of files.filter((f) => AUDIO_EXT.test(f.fileName))) {
   const id = f.fileId || f.fileName;
-  const url = fileUrl(f.fileName);
+  const url = audioUrl(f);
   const seconds = f.created || f.uploaded || f.modified;
   const coverFile = images.get(stem(f.fileName));
   const notesFile = notes.get(stem(f.fileName));
@@ -220,7 +231,7 @@ for (const f of files.filter((f) => AUDIO_EXT.test(f.fileName))) {
     id,
     fileName: f.fileName,
     url,
-    date: new Date(seconds * 1000).toISOString(),
+    date: f.date || new Date(seconds * 1000).toISOString(),
     size: f.size,
     type: f.type,
     duration: await durationFor(id, f, url),
@@ -230,6 +241,9 @@ for (const f of files.filter((f) => AUDIO_EXT.test(f.fileName))) {
   });
 }
 sets.sort((a, b) => b.date.localeCompare(a.date));
+
+// Never publish an empty site because a source was briefly unreachable or misconfigured.
+if (!sets.length && previous.size) throw new Error("No sets found; keeping the current list.");
 
 // No timestamp in the JSON, so the file (and the git history) only changes when the sets change.
 const changedJson = await writeIfChanged("sets.json", JSON.stringify({ sets }, null, 2) + "\n");

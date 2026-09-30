@@ -2,11 +2,20 @@
 
 MDS streaming analog and electronic music for close friends, sporadically from the Vercors natural park, in HQ, for free.
 
-A static site on GitHub Pages. The audio lives in a public Nextcloud folder. An hourly GitHub Action lists that folder and writes `sets.json` (for the site) and `feed.xml` (a podcast feed).
+A static site on GitHub Pages. The audio lives in Cloudflare R2 (bucket `mdsstream-audio`),
+served by the Worker in `worker/`. Every 15 minutes a GitHub Action lists the bucket and writes
+`sets.json` (for the site) and `feed.xml` (a podcast feed). (Until 2026-09-30 the audio was in a
+Nextcloud folder; the build still supports it: unset `LIBRARY_URL` in the workflow.)
 
 ## Publishing a set
 
-Drop an MP3 into the cloud folder. It shows up on the site within 15 minutes (or immediately via **Actions → Update sets → Run workflow**). The date comes from the file itself.
+Upload the MP3 to the R2 bucket: Cloudflare dashboard → **R2 Object Storage** →
+**mdsstream-audio** → **Upload** (drag and drop). It shows up on the site within 15–20 minutes
+(or immediately via **Actions → Update sets → Run workflow**). The date is the upload date.
+
+Renaming: the dashboard can't rename, so download the file, re-upload it under the new name,
+then delete the old one. The site recognises the same content and keeps its stars, listens,
+♥ marks and date.
 
 File names:
 
@@ -30,7 +39,7 @@ MDS_Ambient techno_Focus_120_Atmospheric and polyrhythmic snippet.mp3
 
 ### Notes and covers (optional)
 
-Put them next to the MP3 in the cloud folder, with **exactly the same name**:
+Upload them to the same bucket, with **exactly the same name** as the MP3:
 
 ```
 MDS_Dub techno_Focus_90_First dub session.mp3

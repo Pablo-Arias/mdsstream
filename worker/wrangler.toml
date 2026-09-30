@@ -15,6 +15,11 @@ binding = "DB"
 database_name = "mdsstream"
 database_id = "8f420eaa-9055-4e10-83b3-6f07d0f5b39e"
 
+# The audio files (and covers/notes). Upload by drag-and-drop in the Cloudflare dashboard.
+[[r2_buckets]]
+binding = "AUDIO"
+bucket_name = "mdsstream-audio"
+
 [vars]
 GITHUB_REPO = "Pablo-Arias/mdsstream"
 SITE_ORIGIN = "https://pablo-arias.github.io"
