@@ -191,7 +191,7 @@ function render() {
               : offlineUrls.has(s.id)
                 ? el("button", { type: "button", class: "offline-btn saved", "data-id": s.id, "data-action": "remove-offline", "aria-label": `Saved offline. Remove ${s.title} from this device` }, "✓ Saved offline")
                 : el("button", { type: "button", class: "offline-btn", "data-id": s.id, "data-action": "save-offline" }, "⬇ Save offline"),
-            el("a", { class: "offline-btn", href: s.url, download: "", "aria-label": `Download the MP3 file of ${s.title}` }, "MP3 file"),
+            el("a", { class: "offline-btn", href: `${s.url}${s.url.includes("?") ? "&" : "?"}download`, download: "", "aria-label": `Download the MP3 file of ${s.title}` }, "MP3 file"),
           ),
           s.notes && el("details", { class: "set-notes", "data-id": s.id, ...(openNotes.has(s.id) && { open: "" }) },
             el("summary", {}, "Notes"),

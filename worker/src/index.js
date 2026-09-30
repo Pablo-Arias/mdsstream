@@ -206,6 +206,10 @@ async function serveObject(env, key, request, cors) {
   headers.set("Accept-Ranges", "bytes");
   headers.set("ETag", obj.httpEtag);
   headers.set("Cache-Control", "public, max-age=3600");
+  if (new URL(request.url).searchParams.has("download")) { // "MP3 file" button: save instead of play
+    const name = key.split("/").pop();
+    headers.set("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(name)}`);
+  }
   if (request.method === "HEAD") {
     headers.set("Content-Length", String(obj.size));
     return new Response(null, { status: 200, headers });
