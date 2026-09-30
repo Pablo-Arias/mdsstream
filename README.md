@@ -67,7 +67,10 @@ python3 -m http.server 8000   # then open http://localhost:8000
 `https://mdsstream-api.mdsstream.workers.dev`. It stores listen counts (once per device per
 day, after 30 s of playback), 1–5 star ratings (one per device) and push subscriptions.
 No accounts, cookies or IP addresses: the site sends an anonymous random device ID.
-Every 15 minutes it checks `sets.json` and notifies subscribers of new sets.
+Every 15 minutes it starts the "Update sets" workflow (GitHub's own schedule is unreliable),
+then checks `sets.json` and notifies subscribers of new sets. Starting the workflow uses the
+Worker secret `GITHUB_TOKEN` (fine-grained, Actions read/write on this repo). **It expires on
+2026-12-29**: make a new one and run `npx wrangler secret put GITHUB_TOKEN` in `worker/`.
 
 ```sh
 cd worker

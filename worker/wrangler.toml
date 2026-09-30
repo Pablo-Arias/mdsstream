@@ -16,8 +16,11 @@ database_name = "mdsstream"
 database_id = "8f420eaa-9055-4e10-83b3-6f07d0f5b39e"
 
 [vars]
+GITHUB_REPO = "Pablo-Arias/mdsstream"
 SITE_ORIGIN = "https://pablo-arias.github.io"
 SETS_URL = "https://pablo-arias.github.io/mdsstream/sets.json"
 VAPID_SUBJECT = "https://pablo-arias.github.io/mdsstream/"
 VAPID_PUBLIC_KEY = "BJjiDXMj4aCHPZsf1L5qgLw23krlo9RmLaRr-thDlVZpsKDZjkdpenQsROZz5xdY8Zc7-30yv2uqvScbdbvP2Rg"
-# Secret (set with `wrangler secret put VAPID_PRIVATE_JWK`, never committed): VAPID_PRIVATE_JWK
+# Secrets (set with `wrangler secret put NAME`, never committed):
+#   VAPID_PRIVATE_JWK  push signing key
+#   GITHUB_TOKEN       fine-grained token, Actions read/write on the repo (expires 2026-12-29)

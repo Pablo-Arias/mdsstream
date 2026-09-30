@@ -125,7 +125,7 @@ export default {
   },
 
   async scheduled(_event, env) {
-    await notifyNewSets(env);
+    await Promise.allSettled([triggerSiteUpdate(env), notifyNewSets(env)]);
   },
 };
 
@@ -175,6 +175,26 @@ async function stats(env, device) {
   const myMarks = {};
   for (const r of myMoments.results) (myMarks[r.set_id] ??= []).push(r.bucket * BUCKET);
   return { sets, mine: Object.fromEntries(mine.results.map((r) => [r.set_id, r.stars])), myMoments: myMarks, bucket: BUCKET };
+}
+
+// GitHub's own schedule is best-effort (runs get delayed or skipped for hours), so this
+// reliable cron starts the "Update sets" workflow that re-reads the Nextcloud folder.
+// Needs the secret GITHUB_TOKEN: a fine-grained token with Actions read/write on the repo.
+async function triggerSiteUpdate(env) {
+  if (!env.GITHUB_TOKEN) return;
+  const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/update-sets.yml/dispatches`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "mdsstream-worker",
+    },
+    body: JSON.stringify({ ref: "main" }),
+  });
+  if (res.status !== 204) {
+    console.log(`Couldn't start the site update: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  }
 }
 
 async function notifyNewSets(env) {
