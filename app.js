@@ -217,10 +217,11 @@ function socialRow(s) {
   const st = stats.sets[s.id] || { listens: 0, rating: null, ratings: 0 };
   const mine = stats.mine[s.id] || 0;
   const best = [...(st.moments || [])].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 3);
+  const SHOW_LISTENS = false; // still counted by the Worker, just not shown for now
   const summary = [
     st.ratings ? `${st.rating.toFixed(1)} (${st.ratings})` : "Not rated yet",
-    `${st.listens} ${st.listens === 1 ? "listen" : "listens"}`,
-  ].join(" · ");
+    SHOW_LISTENS && `${st.listens} ${st.listens === 1 ? "listen" : "listens"}`,
+  ].filter(Boolean).join(" · ");
   return el("div", { class: "set-social" },
     el("span", { class: "stars", role: "group", "aria-label": mine ? `Your rating: ${mine} of 5` : "Rate this set" },
       ...[1, 2, 3, 4, 5].map((n) => el("button", {
