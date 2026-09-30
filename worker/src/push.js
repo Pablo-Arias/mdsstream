@@ -34,9 +34,11 @@ export async function sendPush(endpoint, env) {
     headers: {
       Authorization: await vapidHeader(endpoint, env),
       TTL: String(3 * 24 * 3600),
-      Urgency: "normal",
+      Urgency: "high", // deliver even if the phone is asleep
       "Content-Length": "0",
     },
   });
-  return res.status;
+  // Keep the push service's explanation when it refuses (e.g. bad signature, expired).
+  const detail = res.ok ? "" : (await res.text().catch(() => "")).slice(0, 200);
+  return { status: res.status, detail };
 }

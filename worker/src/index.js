@@ -192,12 +192,19 @@ async function notifyNewSets(env) {
 
   const subs = (await env.DB.prepare("SELECT endpoint FROM subscriptions").all()).results;
   const gone = [];
+  const results = [];
   for (const { endpoint } of subs) {
-    const status = await sendPush(endpoint, env).catch(() => 0);
+    const { status, detail } = await sendPush(endpoint, env).catch((err) => ({ status: 0, detail: String(err) }));
+    console.log(`Push to ${endpoint.slice(0, 45)}… → ${status}${detail ? ` ${detail}` : ""}`);
+    results.push({ endpoint, status: `${status}${detail ? ` ${detail}` : ""}` });
     if (status === 404 || status === 410) gone.push(endpoint); // phone unsubscribed or app removed
   }
+  const now = new Date().toISOString();
   await env.DB.batch([
     ...fresh.map(mark),
+    ...results.map((r) =>
+      env.DB.prepare("UPDATE subscriptions SET last_push = ?, last_status = ? WHERE endpoint = ?").bind(now, r.status.slice(0, 300), r.endpoint),
+    ),
     ...gone.map((e) => env.DB.prepare("DELETE FROM subscriptions WHERE endpoint = ?").bind(e)),
   ]);
   console.log(`Notified ${subs.length - gone.length} devices about ${fresh.length} new set(s); removed ${gone.length}.`);

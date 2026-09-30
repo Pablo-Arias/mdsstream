@@ -17,8 +17,10 @@ CREATE TABLE IF NOT EXISTS ratings (
 
 -- Phones that asked to be notified of new sets.
 CREATE TABLE IF NOT EXISTS subscriptions (
-  endpoint TEXT PRIMARY KEY,
-  created  TEXT NOT NULL
+  endpoint    TEXT PRIMARY KEY,
+  created     TEXT NOT NULL,
+  last_push   TEXT,  -- when we last sent it a notification
+  last_status TEXT   -- what the push service answered (201 = accepted)
 );
 
 -- Sets we've already sent a notification for.

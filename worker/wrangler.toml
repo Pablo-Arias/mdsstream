@@ -2,6 +2,10 @@ name = "mdsstream-api"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
 
+# Keep logs (viewable in the Cloudflare dashboard → Workers → mdsstream-api → Logs).
+[observability]
+enabled = true
+
 # Check for new sets and notify subscribers.
 [triggers]
 crons = ["*/15 * * * *"]

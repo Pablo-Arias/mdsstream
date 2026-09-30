@@ -53,6 +53,7 @@ self.addEventListener("push", (event) => {
         badge: new URL("icon-192.png", self.registration.scope).href,
         data: { url },
         tag: "new-set",
+        silent: true, // show it, but no sound or vibration
       });
     })(),
   );
