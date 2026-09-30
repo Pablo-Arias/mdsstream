@@ -60,14 +60,21 @@ const saveOfflineIndex = () => { try { localStorage.setItem(OFFLINE_KEY, JSON.st
 const offlineRequest = (id) => new Request(new URL(`offline/${encodeURIComponent(id)}.mp3`, location.href));
 const sourceFor = (set) => offlineUrls.get(set.id) || set.url;
 
-// Turn saved sets into playable blob URLs (drops any that the browser has evicted).
+// Turn saved sets into playable blob URLs. Drops copies the browser evicted, and copies
+// of a set whose file has since been edited (size changed), so it can be saved again.
 async function prepareOffline() {
   if (!("caches" in window) || !offlineIds.size) return;
   const cache = await caches.open(OFFLINE_CACHE);
   for (const id of [...offlineIds]) {
     const res = await cache.match(offlineRequest(id));
-    if (res) offlineUrls.set(id, URL.createObjectURL(await res.blob()));
-    else offlineIds.delete(id);
+    const blob = res && (await res.blob());
+    const set = sets.find((s) => s.id === id);
+    if (blob && (!set?.size || blob.size === set.size)) {
+      offlineUrls.set(id, URL.createObjectURL(blob));
+    } else {
+      offlineIds.delete(id);
+      if (res) await cache.delete(offlineRequest(id));
+    }
   }
   saveOfflineIndex();
 }
