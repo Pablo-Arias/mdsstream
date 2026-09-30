@@ -87,7 +87,7 @@ async function listFiles() {
 const OBJECTIVES = [
   { id: "lets-go", label: "Let's go", test: /^let'?s ?go$/i },
   { id: "focus", label: "Focus", test: /^focus$/i },
-  { id: "experimentation", label: "Experimentation", test: /^experiment(ation|al)?$/i },
+  { id: "experimentation", label: "Experimentation", test: /^experiment(ation|al|ing|s)?$/i },
 ];
 
 export function parseName(fileName) {
