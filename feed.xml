@@ -17,6 +17,16 @@
     <itunes:category text="Music"/>
     <itunes:explicit>false</itunes:explicit>
     <item>
+      <title>Rainy saturday Chill at home  - Trying some 110 BPM Dub techno inspired rhythms</title>
+      <itunes:author>MDS</itunes:author>
+      <description>Chill · Focus · 120 BPM</description>
+      <guid isPermaLink="false">r2-1842f022d618</guid>
+      <pubDate>Sat, 03 Oct 2026 13:44:25 GMT</pubDate>
+      <enclosure url="https://mdsstream-api.mdsstream.workers.dev/audio/r2-1842f022d618" length="238399737" type="audio/mpeg"/>
+      <link>https://pablo-arias.github.io/mdsstream/#r2-1842f022d618</link>
+      <itunes:duration>5960</itunes:duration>
+    </item>
+    <item>
       <title>Wanted to do something chill at the begining and then something happened</title>
       <itunes:author>MDS</itunes:author>
       <description>Dreamy Chill Jazzy Downtempo · Experimentation · Focus · 75 BPM</description>
