@@ -1,6 +1,29 @@
 {
   "sets": [
     {
+      "id": "r2-13c82016533a",
+      "fileName": "MDS _ Rainy techno _ Experimentation _ 120 _ Trying random 120 not thinking much not looking at screen.mp3",
+      "url": "https://mdsstream-api.mdsstream.workers.dev/audio/r2-13c82016533a",
+      "date": "2026-10-18T15:24:03.779Z",
+      "size": 160953991,
+      "type": "audio/mpeg",
+      "duration": 4023.8,
+      "title": "Trying random 120 not thinking much not looking at screen",
+      "authors": [
+        "MDS"
+      ],
+      "genres": [
+        "Rainy techno"
+      ],
+      "objectives": [
+        {
+          "id": "experimentation",
+          "label": "Experimentation"
+        }
+      ],
+      "bpm": 120
+    },
+    {
       "id": "r2-1842f022d618",
       "fileName": "MDS _ Chill _ Focus _ 120 _ Rainy saturday Chill at home  - Trying some 110 BPM Dub techno inspired rhythms.mp3",
       "url": "https://mdsstream-api.mdsstream.workers.dev/audio/r2-1842f022d618",

@@ -17,6 +17,16 @@
     <itunes:category text="Music"/>
     <itunes:explicit>false</itunes:explicit>
     <item>
+      <title>Trying random 120 not thinking much not looking at screen</title>
+      <itunes:author>MDS</itunes:author>
+      <description>Rainy techno · Experimentation · 120 BPM</description>
+      <guid isPermaLink="false">r2-13c82016533a</guid>
+      <pubDate>Sun, 18 Oct 2026 15:24:03 GMT</pubDate>
+      <enclosure url="https://mdsstream-api.mdsstream.workers.dev/audio/r2-13c82016533a" length="160953991" type="audio/mpeg"/>
+      <link>https://pablo-arias.github.io/mdsstream/#r2-13c82016533a</link>
+      <itunes:duration>4024</itunes:duration>
+    </item>
+    <item>
       <title>Rainy saturday Chill at home  - Trying some 110 BPM Dub techno inspired rhythms</title>
       <itunes:author>MDS</itunes:author>
       <description>Chill · Focus · 120 BPM</description>
