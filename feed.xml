@@ -17,6 +17,15 @@
     <itunes:category text="Music"/>
     <itunes:explicit>false</itunes:explicit>
     <item>
+      <title>133 BPM - Mushroom season - 10 Nov 2026</title>
+      <description>133 BPM - Mushroom season - 10 Nov 2026</description>
+      <guid isPermaLink="false">r2-95085d0ca537</guid>
+      <pubDate>Wed, 11 Nov 2026 15:40:21 GMT</pubDate>
+      <enclosure url="https://mdsstream-api.mdsstream.workers.dev/audio/r2-95085d0ca537" length="201164799" type="audio/mpeg"/>
+      <link>https://pablo-arias.github.io/mdsstream/#r2-95085d0ca537</link>
+      <itunes:duration>5029</itunes:duration>
+    </item>
+    <item>
       <title>Trying random 120 not thinking much not looking at screen</title>
       <itunes:author>MDS</itunes:author>
       <description>Rainy techno · Experimentation · 120 BPM</description>
