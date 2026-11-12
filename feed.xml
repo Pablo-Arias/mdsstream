@@ -17,8 +17,9 @@
     <itunes:category text="Music"/>
     <itunes:explicit>false</itunes:explicit>
     <item>
-      <title>133 BPM _ Mushroom season _ 10 Nov 2026</title>
-      <description>133 BPM _ Mushroom season _ 10 Nov 2026</description>
+      <title>Mushroom season so don&apos;t expect nothing polished.mp3</title>
+      <itunes:author>MDS</itunes:author>
+      <description>Ambient techno · Focus · 133 BPM</description>
       <guid isPermaLink="false">r2-95085d0ca537</guid>
       <pubDate>Wed, 11 Nov 2026 15:40:21 GMT</pubDate>
       <enclosure url="https://mdsstream-api.mdsstream.workers.dev/audio/r2-95085d0ca537" length="201164799" type="audio/mpeg"/>
